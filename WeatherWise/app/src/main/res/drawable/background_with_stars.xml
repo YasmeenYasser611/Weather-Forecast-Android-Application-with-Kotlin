@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Gradient Layer -->
+    <item>
+        <shape>
+            <gradient
+                android:startColor="#2E1A47"
+                android:endColor="#0D0714"
+                android:angle="90" />
+        </shape>
+    </item>
+    <!-- Starry Overlay Layer -->
+    <item>
+        <bitmap
+            android:src="@drawable/starry_background"
+            android:tileMode="repeat"
+            android:gravity="fill" />
+    </item>
+</layer-list>
