@@ -16,4 +16,10 @@ class WeatherRemoteDataSourceImpl(private val weatherService: WeatherService) : 
             weatherService.get5DayForecast(lat, lon, units).body()
         }
     }
+
+    override suspend fun getCurrentWeather(lat: Double, lon: Double, units: String): WeatherResponse? {
+        return withContext(Dispatchers.IO) {
+            weatherService.getCurrentWeather(lat, lon, units).body()
+        }
+    }
 }

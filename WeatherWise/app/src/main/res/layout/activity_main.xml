@@ -73,15 +73,17 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="8dp" />
 
-    <!-- House Illustration -->
-    <ImageView
+
+    <!-- Lottie Animation -->
+    <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/iv_weather_background"
         android:layout_width="match_parent"
         android:layout_height="150dp"
         android:layout_marginTop="12dp"
-        android:contentDescription="Weather Illustration"
-        android:scaleType="centerCrop"
-        android:src="@drawable/house_illustration"
+        android:contentDescription="Weather Animation"
+        app:lottie_fileName="weather_animation.json"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_weather_description" />

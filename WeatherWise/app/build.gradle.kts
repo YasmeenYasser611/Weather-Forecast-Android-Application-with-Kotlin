@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -16,6 +18,13 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        val properties = project.rootProject.file("local.properties").inputStream().use {
+            Properties().apply { load(it) }
+        }
+        buildConfigField("String", "WEATHER_API_KEY", "\"${properties.getProperty("WEATHER_API_KEY")}\"")
+
+
+
     }
 
     buildTypes {
@@ -36,8 +45,10 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
         //dataBinding = true
     }
+
 }
 
 dependencies {
@@ -75,4 +86,9 @@ dependencies {
     implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.5.1")
     //Coroutine
     implementation ("org.jetbrains.kotlin:kotlin-stdlib:1.8.22")
+
+    implementation ("com.airbnb.android:lottie:6.5.1")
+
+    implementation ("com.squareup.okhttp3:okhttp:4.9.3")
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.9.3")
 }
