@@ -1,202 +1,207 @@
 package com.example.weatherwise
+
 import WeatherService
+import android.Manifest
+import android.net.ConnectivityManager
 import android.os.Bundle
-import android.util.Log
-import androidx.activity.enableEdgeToEdge
+import android.view.View
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import com.example.weatherwise.R
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.airbnb.lottie.LottieAnimationView
+import com.bumptech.glide.Glide
 import com.example.weatherwise.data.local.LocalDataSourceImpl
 import com.example.weatherwise.data.local.LocalDatabase
-import com.example.weatherwise.data.model.LocationWithWeather
-import com.example.weatherwise.data.remote.IWeatherRemoteDataSource
+import com.example.weatherwise.data.model.CurrentWeatherResponse
+import com.example.weatherwise.data.model.WeatherResponse
 import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
-import kotlinx.coroutines.delay
+import com.example.weatherwise.databinding.ActivityMainBinding
+//import com.example.weatherwise.databinding.ActivityWeatherBinding
+import com.example.weatherwise.location.LocationHelper
+import com.example.weatherwise.mainscreen.viewmodel.HomeViewModel
+import com.example.weatherwise.mainscreen.viewmodel.HomeViewModelFactory
+import com.example.weatherwise.mainscreen.viewmodel.WeatherIconMapper
 import kotlinx.coroutines.launch
-import java.util.UUID
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var repository: WeatherRepositoryImpl
 
-    private val testLocations = listOf(
-        TestLocation(50.7749, -12.4194, " Francisco"),
-        TestLocation(60.7128, -70.0060, " York"),
-        TestLocation(71.5074, -1.1278, "ondon")
-    )
-    private val testUnits = "metric"
+    private lateinit var binding: ActivityMainBinding
+    private lateinit var viewModel: HomeViewModel
+    private lateinit var vmFactory: HomeViewModelFactory
+//    private lateinit var hourlyAdapter: HourlyForecastAdapter
+//    private lateinit var weeklyAdapter: WeeklyForecastAdapter
+
+    companion object {
+        const val MY_LOCATION_PERMISSION_ID = 123
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        repository = WeatherRepositoryImpl.getInstance(
-            WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
-            LocalDataSourceImpl(
-                LocalDatabase.getInstance(this).weatherDao()
-            )
+
+        // Initialize ViewModel with factory (replace with your repository implementation)
+        vmFactory = HomeViewModelFactory(
+            repository = WeatherRepositoryImpl.getInstance(
+                WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
+                LocalDataSourceImpl(
+                    LocalDatabase.getInstance(this).weatherDao()
+                )
+            ),
+                locationHelper = LocationHelper(this),
+            connectivityManager = getSystemService(ConnectivityManager::class.java)
         )
+        viewModel = ViewModelProvider(this, vmFactory)[HomeViewModel::class.java]
 
-        lifecycleScope.launch {
-            runAllTests()
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            refreshWeatherData()
         }
-    }
 
-    private suspend fun runAllTests() {
-        Log.d("WeatherTest", "===== STARTING TEST SUITE =====")
 
-        // Clear any previous test data
-        clearTestData()
-
-        // Test current location functionality
-        testCurrentLocationOperations()
-
-        // Test favorite locations functionality
-        testFavoriteLocationOperations()
-
-        // Test refresh and delete operations
-        testRefreshAndDeleteOperations()
-
-        // Test offline behavior
-        testOfflineBehavior()
-
-        Log.d("WeatherTest", "===== TEST SUITE COMPLETED =====")
-    }
-
-    private suspend fun clearTestData() {
-        Log.d("WeatherTest", "Clearing previous test data...")
-        repository.getFavoriteLocationsWithWeather().forEach {
-            repository.deleteLocation(it.location.id)
+        viewModel.loading.observe(this) { isLoading ->
+            binding.swipeRefreshLayout.isRefreshing = isLoading
         }
-    }
-
-    private suspend fun testCurrentLocationOperations() {
-        Log.d("WeatherTest", "--- Testing Current Location ---")
-
-        // 1. Set current location
-        val testLocation = testLocations[0]
-        repository.setCurrentLocation(testLocation.lat, testLocation.lon, testUnits)
-        Log.d("WeatherTest", "1. Current location set")
-
-        // 2. Test cached data
-        val cached = repository.getCurrentLocationWithWeather(false, true)
-        Log.d("WeatherTest", "2. Cached data - Current: ${cached?.currentWeather != null}, " +
-                "Forecast: ${cached?.forecast != null}")
-
-        // 3. Test fresh data
-        val fresh = repository.getCurrentLocationWithWeather(true, true)
-        Log.d("WeatherTest", "3. Fresh data - Current: ${fresh?.currentWeather != null}, " +
-                "Forecast: ${fresh?.forecast != null}")
-
-        // 4. Test offline fallback
-        val offline = repository.getCurrentLocationWithWeather(false, false)
-        Log.d("WeatherTest", "4. Offline fallback - Data exists: ${offline != null}")
-
-        if (offline != null) {
-            Log.d("WeatherTest", "Offline data - Current: ${offline.currentWeather != null}, " +
-                    "Forecast: ${offline.forecast != null}")
-        }
-    }
-
-    private suspend fun testFavoriteLocationOperations() {
-        Log.d("WeatherTest", "--- Testing Favorite Locations ---")
-
-        // 1. Add favorite
-        val testLocation = testLocations[1]
-        val success = repository.addFavoriteLocation(
-            testLocation.lat,
-            testLocation.lon,
-            testLocation.name,
-            testUnits
-        )
-        Log.d("WeatherTest", "1. Add favorite success: $success")
-
-        // 2. Verify count
-        val favorites = repository.getFavoriteLocationsWithWeather()
-        Log.d("WeatherTest", "2. Favorite count: ${favorites.size}")
-
-        if (favorites.isNotEmpty()) {
-            Log.d("WeatherTest", "First favorite: ${favorites[0].location.name} " +
-                    "(ID: ${favorites[0].location.id})")
-            Log.d("WeatherTest", "Has weather: ${favorites[0].currentWeather != null}")
-        }
-    }
-
-    private suspend fun testRefreshAndDeleteOperations() {
-        Log.d("WeatherTest", "===== TESTING REFRESH AND DELETE =====")
-
-        // Get a location to test with (use first favorite if exists)
-        val testLocation = repository.getFavoriteLocationsWithWeather().firstOrNull()
-            ?: run {
-                // If no favorites, create one
-                val loc = testLocations[1]
-                repository.addFavoriteLocation(loc.lat, loc.lon, loc.name, testUnits)
-                delay(1000)
-                repository.getFavoriteLocationsWithWeather().first()
+        viewModel.loading.observe(this) { isLoading ->
+            binding.swipeRefreshLayout.isRefreshing = isLoading
+            if (!isLoading) {
+                // Ensure swipe refresh is stopped when loading completes
+                binding.swipeRefreshLayout.isRefreshing = false
             }
-
-        // Test refresh
-        val success = repository.refreshLocation(testLocation.location.id, testUnits)
-        if (success) {
-            Log.d("WeatherTest", "Refresh successful for ${testLocation.location.name}")
-            val refreshed = repository.getFavoriteLocationsWithWeather()
-                .first { it.location.id == testLocation.location.id }
-            Log.d("WeatherTest", "Refreshed temp: ${refreshed.currentWeather?.main?.temp}°C")
-        } else {
-            Log.e("WeatherTest", "Refresh failed for ${testLocation.location.name}")
         }
 
-        // Test delete
-        repository.deleteLocation(testLocation.location.id)
-        Log.d("WeatherTest", "Deleted location: ${testLocation.location.name}")
+        // Setup RecyclerViews
+//        setupRecyclerViews()
 
-        // Verify deletion
-        val remaining = repository.getFavoriteLocationsWithWeather()
-        if (remaining.none { it.location.id == testLocation.location.id }) {
-            Log.d("WeatherTest", "Deletion verified successfully")
-        } else {
-            Log.e("WeatherTest", "Deletion verification failed")
+        // Observe LiveData
+        viewModel.locationData.observe(this) { locationData ->
+            binding.tvCityName.text = locationData.address
         }
+
+        viewModel.weatherData.observe(this) { weatherData ->
+            updateWeatherUI(weatherData)
+        }
+
+        viewModel.error.observe(this) { error ->
+            error?.let { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
+        }
+
+
+        // Setup forecast tabs
+        binding.tabHourly.setOnClickListener {
+            binding.tabHourly.background = ContextCompat.getDrawable(this, R.drawable.tab_selected_background)
+            binding.tabWeekly.background = null
+            binding.rvHourlyForecast.visibility = View.VISIBLE
+            binding.rvWeeklyForecast.visibility = View.GONE
+        }
+
+        binding.tabWeekly.setOnClickListener {
+            binding.tabWeekly.background = ContextCompat.getDrawable(this, R.drawable.tab_selected_background)
+            binding.tabHourly.background = null
+            binding.rvWeeklyForecast.visibility = View.VISIBLE
+            binding.rvHourlyForecast.visibility = View.GONE
+        }
+
+        // Trigger location fetch
+        viewModel.getFreshLocation()
     }
 
-    private suspend fun testOfflineBehavior() {
-        Log.d("WeatherTest", "===== TESTING OFFLINE BEHAVIOR =====")
 
-        // Get current location data while "online"
-        val onlineData = repository.getCurrentLocationWithWeather(false, true)
-        if (onlineData == null) {
-            Log.e("WeatherTest", "No current location to test offline behavior")
-            return
-        }
 
-        Log.d("WeatherTest", "Online data: ${onlineData.currentWeather?.main?.temp}°C")
 
-        // Simulate offline mode (pass isNetworkAvailable = false)
-        val offlineData = repository.getCurrentLocationWithWeather(false, false)
-        if (offlineData != null) {
-            Log.d("WeatherTest", "Offline data: ${offlineData.currentWeather?.main?.temp}°C")
-            if (offlineData.currentWeather?.dt == onlineData.currentWeather?.dt) {
-                Log.d("WeatherTest", "Offline mode correctly returned cached data")
+    override fun onStart() {
+        super.onStart()
+        if (viewModel.checkLocationPermissions()) {
+            if (viewModel.isLocationEnabled()) {
+                viewModel.getFreshLocation()
             } else {
-                Log.e("WeatherTest", "Offline data doesn't match last online data")
+                viewModel.enableLocationServices()
+                Toast.makeText(this, "Please turn on location", Toast.LENGTH_LONG).show()
             }
         } else {
-            Log.e("WeatherTest", "Failed to get data in offline mode")
-        }
-
-        // Test force refresh in offline mode (should fail gracefully)
-        val forceRefreshOffline = repository.getCurrentLocationWithWeather(true, false)
-        if (forceRefreshOffline != null) {
-            Log.d("WeatherTest", "Force refresh in offline mode fell back to cached data")
-        } else {
-            Log.e("WeatherTest", "Force refresh in offline mode failed completely")
+            requestPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
         }
     }
 
-    private data class TestLocation(
-        val lat: Double,
-        val lon: Double,
-        val name: String
-    )
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        ) {
+            if (viewModel.isLocationEnabled()) {
+                viewModel.getFreshLocation()
+            } else {
+                viewModel.enableLocationServices()
+                Toast.makeText(this, "Please turn on location", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            Toast.makeText(this, "Location permissions denied", Toast.LENGTH_LONG).show()
+        }
+    }
+
+
+    private fun updateWeatherUI(weatherData: HomeViewModel.WeatherData) {
+        weatherData.currentWeather?.let { current ->
+            // Update temperature
+            binding.tvTemperature.text = "${current.main.temp.toInt()}°"
+
+            // Update weather description and high/low
+            val description = current.weather.firstOrNull()?.description?.capitalize(Locale.getDefault()) ?: "N/A"
+            binding.tvWeatherDescription.text = "$description  H:${current.main.temp_max.toInt()}° L:${current.main.temp_min.toInt()}°"
+
+            // Update weather icon
+            current.weather.firstOrNull()?.icon?.let { iconCode ->
+                val animationFile = WeatherIconMapper.getLottieAnimationForIcon(iconCode)
+                binding.weatherAnimation.setAnimation(animationFile)
+                binding.weatherAnimation.playAnimation()
+            }
+
+            // Update weather details
+            binding.tvPressure.text = "${current.main.pressure} hPa"
+            binding.tvHumidity.text = "${current.main.humidity}%"
+            binding.tvWindSpeed.text = "${current.wind.speed} m/s"
+            binding.tvCloudCover.text = "${current.clouds.all}%"
+            binding.tvVisibility.text = "${current.visibility} m"
+            binding.tvUvIndex.text = "N/A" // UV Index not in CurrentWeatherResponse
+        }
+
+        // Update date and time
+        weatherData.currentWeather?.dt?.let { timestamp ->
+            val dateFormat = SimpleDateFormat("MMM d, yyyy  hh:mm a", Locale.getDefault())
+            binding.tvDateTime.text = dateFormat.format(Date(timestamp * 1000))
+        }
+
+        // Update Lottie animation
+        weatherData.currentWeather?.weather?.firstOrNull()?.main?.let { condition ->
+            val animationFile = when (condition.lowercase()) {
+                "clear" -> "clear_weather.json"
+                "clouds" -> "cloudy_weather.json"
+                "rain" -> "rainy_weather.json"
+                "snow" -> "snowy_weather.json"
+                else -> "weather_animation.json"
+            }
+//            binding.ivWeatherBackground.setAnimation(animationFile)
+        }
+
+
+    }
+
+    private fun refreshWeatherData() {
+        viewModel.refreshCurrentWeather()
+    }
 }

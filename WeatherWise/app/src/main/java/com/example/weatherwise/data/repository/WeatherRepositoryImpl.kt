@@ -36,25 +36,54 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
         localDataSource.setCurrentLocation(locationId)
     }
 
-    override suspend fun getCurrentLocationWithWeather(forceRefresh: Boolean, isNetworkAvailable: Boolean): LocationWithWeather?
-    {
+    override suspend fun getCurrentLocationWithWeather(forceRefresh: Boolean, isNetworkAvailable: Boolean): LocationWithWeather? {
         val currentLocation = localDataSource.getCurrentLocation() ?: return null
 
         return try {
             if (forceRefresh && isNetworkAvailable) {
-                fetchAndSaveWeatherData(currentLocation.id, currentLocation.latitude, currentLocation.longitude, DEFAULT_UNITS)
-            }
+                // Delete current location and its weather data
+                localDataSource.deleteLocation(currentLocation.id)
 
-            val currentWeather = localDataSource.getCurrentWeather(currentLocation.id)
-            val forecast = localDataSource.getForecast(currentLocation.id)
+                // Create a new location with same coordinates but fresh data
+                val newLocationId = getOrCreateLocationId(
+                    currentLocation.latitude,
+                    currentLocation.longitude,
+                    isCurrent = true
+                )
 
-            if (currentWeather == null && forecast == null && isNetworkAvailable)
-            {
-                fetchAndSaveWeatherData(currentLocation.id, currentLocation.latitude, currentLocation.longitude, DEFAULT_UNITS)
-                LocationWithWeather(location = currentLocation, currentWeather = localDataSource.getCurrentWeather(currentLocation.id), forecast = localDataSource.getForecast(currentLocation.id))
-            }
-            else {
-                LocationWithWeather(location = currentLocation, currentWeather = currentWeather, forecast = forecast)
+                // Fetch fresh data for the new location
+                fetchAndSaveWeatherData(
+                    newLocationId,
+                    currentLocation.latitude,
+                    currentLocation.longitude,
+                    DEFAULT_UNITS
+                )
+
+                // Get the newly created location with fresh data
+                val newLocation = localDataSource.getCurrentLocation() ?: return null
+                LocationWithWeather(
+                    location = newLocation,
+                    currentWeather = localDataSource.getCurrentWeather(newLocation.id),
+                    forecast = localDataSource.getForecast(newLocation.id)
+                )
+            } else {
+                // Normal case (no refresh or no network)
+                if (isNetworkAvailable &&
+                    (localDataSource.getCurrentWeather(currentLocation.id) == null ||
+                            localDataSource.getForecast(currentLocation.id) == null)) {
+                    fetchAndSaveWeatherData(
+                        currentLocation.id,
+                        currentLocation.latitude,
+                        currentLocation.longitude,
+                        DEFAULT_UNITS
+                    )
+                }
+
+                LocationWithWeather(
+                    location = currentLocation,
+                    currentWeather = localDataSource.getCurrentWeather(currentLocation.id),
+                    forecast = localDataSource.getForecast(currentLocation.id)
+                )
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error getting location with weather", e)
@@ -105,20 +134,31 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
 
     private suspend fun fetchAndSaveWeatherData(locationId: String, lat: Double, lon: Double, units: String) {
         try {
+            // Clear old data first
+            localDataSource.deleteCurrentWeather(locationId)
+            localDataSource.deleteForecast(locationId)
+
+            // Fetch new data
             val currentWeatherResponse = remoteDataSource.getCurrentWeather(lat, lon, units)
             val forecastResponse = remoteDataSource.get5DayForecast(lat, lon, units)
 
+            // Save new data
             currentWeatherResponse?.let {
-                Log.d(TAG, "Saving weather for $locationId")
                 localDataSource.saveCurrentWeather(locationId, it)
-            } ?: Log.e(TAG, "Null weather response")
+            } ?: run {
+                Log.e(TAG, "Null current weather response")
+                throw Exception("Failed to fetch current weather")
+            }
 
             forecastResponse?.let {
-                Log.d(TAG, "Saving forecast for $locationId")
                 localDataSource.saveForecast(locationId, it)
-            } ?: Log.e(TAG, "Null forecast response")
+            } ?: run {
+                Log.e(TAG, "Null forecast response")
+                throw Exception("Failed to fetch forecast")
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Error fetching/saving weather", e)
+            Log.e(TAG, "Error in fetchAndSaveWeatherData: ${e.message}")
+            throw e // Re-throw to handle in ViewModel
         }
     }
 
@@ -144,5 +184,9 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
             localDataSource.saveLocation(newLocation)
             newLocation.id
         }
+    }
+
+    override suspend fun getCurrentLocationId(): String? {
+        return localDataSource.getCurrentLocation()?.id
     }
 }

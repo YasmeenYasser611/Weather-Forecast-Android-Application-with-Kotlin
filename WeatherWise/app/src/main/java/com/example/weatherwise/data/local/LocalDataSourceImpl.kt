@@ -72,4 +72,16 @@ class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource
             LocationWithWeather(location = dbData.location, currentWeather = dbData.currentWeather?.weatherData, forecast = dbData.forecast?.forecastData)
         }
     }
+
+    override suspend fun deleteCurrentWeather(locationId: String) {
+        weatherDao.deleteCurrentWeather(locationId)
+    }
+
+    override suspend fun deleteForecast(locationId: String) {
+        weatherDao.deleteForecast(locationId)
+    }
+
+    override suspend fun deleteCurrentWeather(currentWeather: CurrentWeatherEntity) {
+        weatherDao.deleteCurrentWeather(currentWeather)
+    }
 }

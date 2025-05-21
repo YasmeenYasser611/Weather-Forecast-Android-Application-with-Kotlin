@@ -1,5 +1,6 @@
 package com.example.weatherwise.data.local
 
+import com.example.weatherwise.data.model.CurrentWeatherEntity
 import com.example.weatherwise.data.model.CurrentWeatherResponse
 import com.example.weatherwise.data.model.LocationEntity
 import com.example.weatherwise.data.model.LocationWithWeather
@@ -28,4 +29,10 @@ interface ILocalDataSource {
 
     // Combined operations
     suspend fun getLocationWithWeather(locationId: String): LocationWithWeather?
+
+    suspend fun deleteCurrentWeather(locationId: String)
+    suspend fun deleteForecast(locationId: String)
+
+    // If you need the entity-based delete as well:
+    suspend fun deleteCurrentWeather(currentWeather: CurrentWeatherEntity)
 }

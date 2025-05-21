@@ -17,4 +17,6 @@ interface IWeatherRepository {
 
     suspend fun refreshLocation(locationId: String, units: String): Boolean
     suspend fun deleteLocation(locationId: String)
+
+    suspend fun getCurrentLocationId(): String?
 }

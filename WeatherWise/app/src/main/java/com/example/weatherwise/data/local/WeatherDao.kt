@@ -74,6 +74,16 @@ interface WeatherDao {
     @Transaction
     @Query("SELECT * FROM locations WHERE id = :locationId")
     suspend fun getLocationWithWeather(locationId: String): LocationWithWeatherDB?
+
+
+    @Delete
+    fun deleteCurrentWeather(currentWeather: CurrentWeatherEntity)
+
+    @Query("DELETE FROM current_weather WHERE locationId = :locationId")
+    suspend fun deleteCurrentWeather(locationId: String)
+
+    @Query("DELETE FROM forecast_weather WHERE locationId = :locationId")
+    suspend fun deleteForecast(locationId: String)
 }
 
 
