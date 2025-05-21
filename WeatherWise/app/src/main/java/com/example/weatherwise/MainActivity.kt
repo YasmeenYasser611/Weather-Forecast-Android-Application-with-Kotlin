@@ -1,229 +1,202 @@
 package com.example.weatherwise
-
+import WeatherService
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
+import com.example.weatherwise.R
 import com.example.weatherwise.data.local.LocalDataSourceImpl
 import com.example.weatherwise.data.local.LocalDatabase
-import com.example.weatherwise.data.model.CurrentWeatherData
-import com.example.weatherwise.data.model.FavouritePlace
+import com.example.weatherwise.data.model.LocationWithWeather
+import com.example.weatherwise.data.remote.IWeatherRemoteDataSource
 import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
-import com.example.weatherwise.data.remote.WeatherService
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.UUID
 
-lateinit var weatherRepo :WeatherRepositoryImpl
 class MainActivity : AppCompatActivity() {
+    private lateinit var repository: WeatherRepositoryImpl
+
+    private val testLocations = listOf(
+        TestLocation(50.7749, -12.4194, " Francisco"),
+        TestLocation(60.7128, -70.0060, " York"),
+        TestLocation(71.5074, -1.1278, "ondon")
+    )
+    private val testUnits = "metric"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        weatherRepo = WeatherRepositoryImpl.getInstance(WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)) , LocalDataSourceImpl(
-            LocalDatabase.getInstance(this).favoriteLocationDao() , LocalDatabase.getInstance(this).weatherDataDao() ) )
+        repository = WeatherRepositoryImpl.getInstance(
+            WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
+            LocalDataSourceImpl(
+                LocalDatabase.getInstance(this).weatherDao()
+            )
+        )
 
-        Log.i("WeatherTest", "onCreate: ")
-        testWeatherApi()
-        testLocalDatabaseOperations()
-        testCurrentLocationHandling()
-        testOfflineScenarios()
-
-    }
-
-    private fun testWeatherApi() {
-        GlobalScope.launch(Dispatchers.IO) {
-            try {
-                // Test 1: 5-day forecast
-                Log.d("WeatherTest", "===== TEST 1: 5-Day Forecast =====")
-                val forecast = weatherRepo.get5DayForecast(
-                    lat = 30.0444,  // Cairo coordinates
-                    lon = 31.2357,
-                    units = "metric"
-                )
-
-                launch(Dispatchers.Main) {
-                    forecast?.let {
-                        Log.d("WeatherTest", "1*Success! ${it.city.name} forecast:")
-                        it.list.take(5).forEach { forecast ->
-                            Log.d("WeatherTest", " 1-${forecast.dt} - Temp: ${forecast.main.temp}°C, ${forecast.weather[0].description}")
-                        }
-                    } ?: Log.e("WeatherTest", "1-Null forecast response")
-                }
-
-                // Test 2: Current weather
-                Log.d("WeatherTest", "\n===== TEST 2: Current Weather (Online) =====")
-                val currentWeather = weatherRepo.getCurrentWeather(
-                    lat = 30.0444,
-                    lon = 31.2357,
-                    units = "metric",
-                    forceRefresh = true,
-                    isNetworkAvailable = true
-                )
-
-                currentWeather?.let {
-                    Log.d("WeatherTest", "2-Current weather: ${it.temperature}°C, ${it.weatherDescription}")
-                    Log.d("WeatherTest", "2-Location ID: ${it.locationId}")
-                } ?: Log.e("WeatherTest", "2-Null current weather response")
-
-            } catch (e: Exception) {
-                Log.e("WeatherTest", "2-API Error: ${e.message}")
-            }
+        lifecycleScope.launch {
+            runAllTests()
         }
     }
 
-    private fun testLocalDatabaseOperations() {
-        GlobalScope.launch(Dispatchers.IO) {
-            try {
-                // Test data
-                val testLocation = FavouritePlace(
-                    cityName = "Test City",
-                    country = "Test Country",
-                    latitude = 30.1234,
-                    longitude = 31.5678,
-                    isCurrentLocation = false
-                )
+    private suspend fun runAllTests() {
+        Log.d("WeatherTest", "===== STARTING TEST SUITE =====")
 
-                val testWeather = CurrentWeatherData(
-                    locationId = 1,
-                    temperature = 25.0,
-                    humidity = 60,
-                    pressure = 1012,
-                    windSpeed = 5.5,
-                    weatherDescription = "Sunny",
-                    weatherIcon = "01d"
-                )
+        // Clear any previous test data
+        clearTestData()
 
-                // Test 3: Favorite locations
-                Log.d("WeatherTest", "3-\n===== TEST 3: Favorite Locations =====")
+        // Test current location functionality
+        testCurrentLocationOperations()
 
-                // Add favorite
-                weatherRepo.addFavoriteLocation(testLocation, testWeather)
-                Log.d("WeatherTest", "3-Added favorite location")
+        // Test favorite locations functionality
+        testFavoriteLocationOperations()
 
-                // Get all favorites
-                val favorites = weatherRepo.getFavoriteLocations()
-                Log.d("WeatherTest", "3-Favorites count: ${favorites.size}")
-                favorites.forEach {
-                    Log.d("WeatherTest", "3-Favorite: ${it.cityName} (ID: ${it.id}), Current: ${it.isCurrentLocation}")
-                }
+        // Test refresh and delete operations
+        testRefreshAndDeleteOperations()
 
-                // Get weather for favorite
-                if (favorites.isNotEmpty()) {
-                    val favWeather = weatherRepo.getWeatherForFavorite(favorites.first().id)
-                    Log.d("WeatherTest", "3-Favorite weather: ${favWeather?.temperature}°C")
-                }
+        // Test offline behavior
+        testOfflineBehavior()
 
-                // Remove favorite
-                if (favorites.isNotEmpty()) {
-                    weatherRepo.removeFavoriteLocation(favorites.first())
-                    Log.d("WeatherTest", "3-Removed favorite location")
-                }
+        Log.d("WeatherTest", "===== TEST SUITE COMPLETED =====")
+    }
 
-            } catch (e: Exception) {
-                Log.e("WeatherTest", "3-Database Error: ${e.message}")
-            }
+    private suspend fun clearTestData() {
+        Log.d("WeatherTest", "Clearing previous test data...")
+        repository.getFavoriteLocationsWithWeather().forEach {
+            repository.deleteLocation(it.location.id)
         }
     }
 
-    private fun testCurrentLocationHandling() {
-        GlobalScope.launch(Dispatchers.IO) {
-            try {
-                // Test 4: Current location handling
-                Log.d("WeatherTest", "\n===== TEST 4: Current Location Handling =====")
+    private suspend fun testCurrentLocationOperations() {
+        Log.d("WeatherTest", "--- Testing Current Location ---")
 
-                // First get current weather (will mark as current location)
-                val cairoWeather = weatherRepo.getCurrentWeather(
-                    lat = 30.0444,
-                    lon = 31.2357,
-                    units = "metric",
-                    forceRefresh = true,
-                    isNetworkAvailable = true
-                )
+        // 1. Set current location
+        val testLocation = testLocations[0]
+        repository.setCurrentLocation(testLocation.lat, testLocation.lon, testUnits)
+        Log.d("WeatherTest", "1. Current location set")
 
-                // Verify current location was set
-                val currentLocation =  LocalDataSourceImpl(
-                    LocalDatabase.getInstance(this@MainActivity).favoriteLocationDao() , LocalDatabase.getInstance(this@MainActivity).weatherDataDao() ).getCurrentLocation()
+        // 2. Test cached data
+        val cached = repository.getCurrentLocationWithWeather(false, true)
+        Log.d("WeatherTest", "2. Cached data - Current: ${cached?.currentWeather != null}, " +
+                "Forecast: ${cached?.forecast != null}")
 
-                currentLocation?.let {
-                    Log.d("WeatherTest", "4-Current location set to: ${it.cityName} (ID: ${it.id})")
-                    Log.d("WeatherTest", "4-Coordinates: ${it.latitude}, ${it.longitude}")
-                } ?: Log.e("WeatherTest", "4-No current location set")
+        // 3. Test fresh data
+        val fresh = repository.getCurrentLocationWithWeather(true, true)
+        Log.d("WeatherTest", "3. Fresh data - Current: ${fresh?.currentWeather != null}, " +
+                "Forecast: ${fresh?.forecast != null}")
 
-                // Test getting weather while offline
-                val offlineWeather = weatherRepo.getCurrentWeather(
-                    lat = 30.0444,
-                    lon = 31.2357,
-                    units = "metric",
-                    forceRefresh = false,
-                    isNetworkAvailable = false
-                )
+        // 4. Test offline fallback
+        val offline = repository.getCurrentLocationWithWeather(false, false)
+        Log.d("WeatherTest", "4. Offline fallback - Data exists: ${offline != null}")
 
-                offlineWeather?.let {
-                    Log.d("WeatherTest", "4-Offline weather retrieved: ${it.temperature}°C")
-                } ?: Log.e("WeatherTest", "4-Failed to get offline weather")
-
-                // Test coordinate matching
-                val nearbyWeather = weatherRepo.getCurrentWeather(
-                    lat = 30.0445,  // Slightly different coordinates
-                    lon = 31.2356,
-                    units = "metric",
-                    forceRefresh = false,
-                    isNetworkAvailable = false
-                )
-
-                nearbyWeather?.let {
-                    Log.d("WeatherTest", "4-Nearby coordinates matched existing location")
-                } ?: Log.e("WeatherTest", "4-Nearby coordinates didn't match")
-
-            } catch (e: Exception) {
-                Log.e("WeatherTest", "4-Current Location Error: ${e.message}")
-            }
+        if (offline != null) {
+            Log.d("WeatherTest", "Offline data - Current: ${offline.currentWeather != null}, " +
+                    "Forecast: ${offline.forecast != null}")
         }
     }
 
-    private fun testOfflineScenarios() {
-        GlobalScope.launch(Dispatchers.IO) {
-            try {
-                // Test 5: Offline scenarios
-                Log.d("WeatherTest", "\n===== TEST 5: Offline Scenarios =====")
+    private suspend fun testFavoriteLocationOperations() {
+        Log.d("WeatherTest", "--- Testing Favorite Locations ---")
 
-                // Test with no network and no existing location
-                val unknownLocationWeather = weatherRepo.getCurrentWeather(
-                    lat = 40.7128,  // New York (not in DB)
-                    lon = -74.0060,
-                    units = "metric",
-                    forceRefresh = false,
-                    isNetworkAvailable = false
-                )
+        // 1. Add favorite
+        val testLocation = testLocations[1]
+        val success = repository.addFavoriteLocation(
+            testLocation.lat,
+            testLocation.lon,
+            testLocation.name,
+            testUnits
+        )
+        Log.d("WeatherTest", "1. Add favorite success: $success")
 
-                if (unknownLocationWeather == null) {
-                    Log.d("WeatherTest", "5-Correctly returned null for unknown offline location")
-                } else {
-                    Log.e("WeatherTest", "5-Incorrectly returned data for unknown offline location")
-                }
+        // 2. Verify count
+        val favorites = repository.getFavoriteLocationsWithWeather()
+        Log.d("WeatherTest", "2. Favorite count: ${favorites.size}")
 
-                // Test fallback to most recent
-                val mostRecent =  LocalDataSourceImpl(
-                    LocalDatabase.getInstance(this@MainActivity).favoriteLocationDao() , LocalDatabase.getInstance(this@MainActivity).weatherDataDao() ).getMostRecentWeatherData()
-
-                mostRecent?.let {
-                    Log.d("WeatherTest", "5-Most recent weather fallback: ${it.temperature}°C")
-                } ?: Log.d("WeatherTest", "5-No recent weather data available")
-
-            } catch (e: Exception) {
-                Log.e("WeatherTest", "5-ffline Error: ${e.message}")
-            }
+        if (favorites.isNotEmpty()) {
+            Log.d("WeatherTest", "First favorite: ${favorites[0].location.name} " +
+                    "(ID: ${favorites[0].location.id})")
+            Log.d("WeatherTest", "Has weather: ${favorites[0].currentWeather != null}")
         }
     }
 
+    private suspend fun testRefreshAndDeleteOperations() {
+        Log.d("WeatherTest", "===== TESTING REFRESH AND DELETE =====")
 
+        // Get a location to test with (use first favorite if exists)
+        val testLocation = repository.getFavoriteLocationsWithWeather().firstOrNull()
+            ?: run {
+                // If no favorites, create one
+                val loc = testLocations[1]
+                repository.addFavoriteLocation(loc.lat, loc.lon, loc.name, testUnits)
+                delay(1000)
+                repository.getFavoriteLocationsWithWeather().first()
+            }
+
+        // Test refresh
+        val success = repository.refreshLocation(testLocation.location.id, testUnits)
+        if (success) {
+            Log.d("WeatherTest", "Refresh successful for ${testLocation.location.name}")
+            val refreshed = repository.getFavoriteLocationsWithWeather()
+                .first { it.location.id == testLocation.location.id }
+            Log.d("WeatherTest", "Refreshed temp: ${refreshed.currentWeather?.main?.temp}°C")
+        } else {
+            Log.e("WeatherTest", "Refresh failed for ${testLocation.location.name}")
+        }
+
+        // Test delete
+        repository.deleteLocation(testLocation.location.id)
+        Log.d("WeatherTest", "Deleted location: ${testLocation.location.name}")
+
+        // Verify deletion
+        val remaining = repository.getFavoriteLocationsWithWeather()
+        if (remaining.none { it.location.id == testLocation.location.id }) {
+            Log.d("WeatherTest", "Deletion verified successfully")
+        } else {
+            Log.e("WeatherTest", "Deletion verification failed")
+        }
+    }
+
+    private suspend fun testOfflineBehavior() {
+        Log.d("WeatherTest", "===== TESTING OFFLINE BEHAVIOR =====")
+
+        // Get current location data while "online"
+        val onlineData = repository.getCurrentLocationWithWeather(false, true)
+        if (onlineData == null) {
+            Log.e("WeatherTest", "No current location to test offline behavior")
+            return
+        }
+
+        Log.d("WeatherTest", "Online data: ${onlineData.currentWeather?.main?.temp}°C")
+
+        // Simulate offline mode (pass isNetworkAvailable = false)
+        val offlineData = repository.getCurrentLocationWithWeather(false, false)
+        if (offlineData != null) {
+            Log.d("WeatherTest", "Offline data: ${offlineData.currentWeather?.main?.temp}°C")
+            if (offlineData.currentWeather?.dt == onlineData.currentWeather?.dt) {
+                Log.d("WeatherTest", "Offline mode correctly returned cached data")
+            } else {
+                Log.e("WeatherTest", "Offline data doesn't match last online data")
+            }
+        } else {
+            Log.e("WeatherTest", "Failed to get data in offline mode")
+        }
+
+        // Test force refresh in offline mode (should fail gracefully)
+        val forceRefreshOffline = repository.getCurrentLocationWithWeather(true, false)
+        if (forceRefreshOffline != null) {
+            Log.d("WeatherTest", "Force refresh in offline mode fell back to cached data")
+        } else {
+            Log.e("WeatherTest", "Force refresh in offline mode failed completely")
+        }
+    }
+
+    private data class TestLocation(
+        val lat: Double,
+        val lon: Double,
+        val name: String
+    )
 }
-
-
-

@@ -1,24 +1,31 @@
 package com.example.weatherwise.data.local
 
-import com.example.weatherwise.data.model.CurrentWeatherData
-import com.example.weatherwise.data.model.FavouritePlace
+import com.example.weatherwise.data.model.CurrentWeatherResponse
+import com.example.weatherwise.data.model.LocationEntity
+import com.example.weatherwise.data.model.LocationWithWeather
+import com.example.weatherwise.data.model.WeatherResponse
 
-interface ILocalDataSource
-{
-    suspend fun insertFavoriteLocation(location: FavouritePlace)
-    suspend fun deleteFavoriteLocation(location: FavouritePlace)
-    suspend fun getAllFavoriteLocations(): List<FavouritePlace>
-    suspend fun getFavoriteLocationById(id: Int): FavouritePlace?
-
-
-    suspend fun saveWeatherDataForLocation(weatherData: CurrentWeatherData)
-    suspend fun getWeatherDataForLocation(locationId: Int): CurrentWeatherData?
-    suspend fun deleteWeatherDataForLocation(locationId: Int)
-
-    suspend fun findLocationByCoordinates(lat: Double, lon: Double): FavouritePlace?
-
-    suspend fun getCurrentLocation(): FavouritePlace?
-    suspend fun setCurrentLocation(location: FavouritePlace)
-    suspend fun getMostRecentWeatherData(): CurrentWeatherData?
+interface ILocalDataSource {
+    // Location operations
+    suspend fun saveLocation(location: LocationEntity)
+    suspend fun getLocation(id: String): LocationEntity?
+    suspend fun findLocationByCoordinates(lat: Double, lon: Double): LocationEntity?
+    suspend fun getCurrentLocation(): LocationEntity?
+    suspend fun getFavoriteLocations(): List<LocationEntity>
     suspend fun clearCurrentLocationFlag()
+    suspend fun setCurrentLocation(locationId: String)
+    suspend fun setFavoriteStatus(locationId: String, isFavorite: Boolean)
+    suspend fun updateLocationName(locationId: String, name: String)
+    suspend fun deleteLocation(locationId: String)
+
+    // Weather operations
+    suspend fun saveCurrentWeather(locationId: String, weather: CurrentWeatherResponse)
+    suspend fun getCurrentWeather(locationId: String): CurrentWeatherResponse?
+
+    // Forecast operations
+    suspend fun saveForecast(locationId: String, forecast: WeatherResponse)
+    suspend fun getForecast(locationId: String): WeatherResponse?
+
+    // Combined operations
+    suspend fun getLocationWithWeather(locationId: String): LocationWithWeather?
 }

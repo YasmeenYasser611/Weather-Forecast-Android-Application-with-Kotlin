@@ -1,104 +1,75 @@
 package com.example.weatherwise.data.local
 
-import com.example.weatherwise.data.model.CurrentWeatherData
-import com.example.weatherwise.data.model.FavouritePlace
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlin.math.abs
+import com.example.weatherwise.data.model.CurrentWeatherEntity
+import com.example.weatherwise.data.model.CurrentWeatherResponse
+import com.example.weatherwise.data.model.ForecastWeatherEntity
+import com.example.weatherwise.data.model.LocationEntity
+import com.example.weatherwise.data.model.LocationWithWeather
+import com.example.weatherwise.data.model.WeatherResponse
 
-class LocalDataSourceImpl(
-    private val favoriteLocationDao: FavoriteLocationDao,
-    private val weatherDataDao: WeatherDataDao
-) : ILocalDataSource {
+class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource {
 
-    // Existing implementations
-    override suspend fun insertFavoriteLocation(location: FavouritePlace) {
-        withContext(Dispatchers.IO) {
-            favoriteLocationDao.insertLocation(location)
-        }
+    override suspend fun saveLocation(location: LocationEntity) {
+        weatherDao.insertLocation(location)
     }
 
-    override suspend fun deleteFavoriteLocation(location: FavouritePlace) {
-        withContext(Dispatchers.IO) {
-            favoriteLocationDao.deleteLocation(location)
-            weatherDataDao.deleteWeatherDataForLocation(location.id)
-        }
+    override suspend fun getLocation(id: String): LocationEntity? {
+        return weatherDao.getLocation(id)
     }
 
-    override suspend fun getAllFavoriteLocations(): List<FavouritePlace> {
-        return withContext(Dispatchers.IO) {
-            favoriteLocationDao.getAllFavoriteLocations()
-        }
+    override suspend fun findLocationByCoordinates(lat: Double, lon: Double): LocationEntity? {
+        return weatherDao.findLocationByCoordinates(lat, lon)
     }
 
-    override suspend fun getFavoriteLocationById(id: Int): FavouritePlace? {
-        return withContext(Dispatchers.IO) {
-            favoriteLocationDao.getFavoriteLocationById(id)
-        }
+    override suspend fun getCurrentLocation(): LocationEntity? {
+        return weatherDao.getCurrentLocation()
     }
 
-    override suspend fun saveWeatherDataForLocation(weatherData: CurrentWeatherData) {
-        withContext(Dispatchers.IO) {
-            weatherDataDao.insertWeatherData(weatherData)
-        }
-    }
-
-    override suspend fun getWeatherDataForLocation(locationId: Int): CurrentWeatherData? {
-        return withContext(Dispatchers.IO) {
-            weatherDataDao.getWeatherDataForLocation(locationId)
-        }
-    }
-
-    override suspend fun deleteWeatherDataForLocation(locationId: Int) {
-        withContext(Dispatchers.IO) {
-            weatherDataDao.deleteWeatherDataForLocation(locationId)
-        }
-    }
-
-    // Updated coordinate comparison with delta
-    override suspend fun findLocationByCoordinates(lat: Double, lon: Double): FavouritePlace? {
-        val locations = getAllFavoriteLocations()
-        return locations.firstOrNull { location ->
-            location.latitude.approxEquals(lat) &&
-                    location.longitude.approxEquals(lon) &&
-                    location.isCurrentLocation  // Prioritize current location
-        } ?: locations.firstOrNull { location ->
-            location.latitude.approxEquals(lat) &&
-                    location.longitude.approxEquals(lon)
-        }
-    }
-
-    // New implementations for current location handling
-    override suspend fun getCurrentLocation(): FavouritePlace? {
-        return withContext(Dispatchers.IO) {
-            favoriteLocationDao.getCurrentLocation()
-        }
-    }
-
-    override suspend fun setCurrentLocation(location: FavouritePlace) {
-        withContext(Dispatchers.IO) {
-            // First clear any existing current location flag
-            favoriteLocationDao.clearCurrentLocationFlag()
-            // Then set the new current location
-            favoriteLocationDao.updateLocation(location.copy(isCurrentLocation = true))
-        }
+    override suspend fun getFavoriteLocations(): List<LocationEntity> {
+        return weatherDao.getFavoriteLocations()
     }
 
     override suspend fun clearCurrentLocationFlag() {
-        withContext(Dispatchers.IO) {
-            favoriteLocationDao.clearCurrentLocationFlag()
-        }
+        weatherDao.clearCurrentLocationFlag()
     }
 
-    override suspend fun getMostRecentWeatherData(): CurrentWeatherData? {
-        return withContext(Dispatchers.IO) {
-            // Get weather data ordered by lastUpdated descending, take the first
-            weatherDataDao.getMostRecentWeatherData()
+    override suspend fun setCurrentLocation(locationId: String) {
+        weatherDao.setCurrentLocation(locationId)
+    }
+
+    override suspend fun setFavoriteStatus(locationId: String, isFavorite: Boolean) {
+        weatherDao.setFavoriteStatus(locationId, isFavorite)
+    }
+
+    override suspend fun updateLocationName(locationId: String, name: String) {
+        weatherDao.updateLocationName(locationId, name)
+    }
+
+    override suspend fun deleteLocation(locationId: String) {
+        weatherDao.deleteLocation(locationId)
+    }
+
+    override suspend fun saveCurrentWeather(locationId: String, weather: CurrentWeatherResponse) {
+        weatherDao.insertCurrentWeather(CurrentWeatherEntity(locationId = locationId, weatherData = weather))
+    }
+
+    override suspend fun getCurrentWeather(locationId: String): CurrentWeatherResponse? {
+        return weatherDao.getCurrentWeather(locationId)?.weatherData
+    }
+
+    override suspend fun saveForecast(locationId: String, forecast: WeatherResponse) {
+        weatherDao.insertForecast(
+            ForecastWeatherEntity(locationId = locationId, forecastData = forecast)
+        )
+    }
+
+    override suspend fun getForecast(locationId: String): WeatherResponse? {
+        return weatherDao.getForecast(locationId)?.forecastData
+    }
+
+    override suspend fun getLocationWithWeather(locationId: String): LocationWithWeather? {
+        return weatherDao.getLocationWithWeather(locationId)?.let { dbData ->
+            LocationWithWeather(location = dbData.location, currentWeather = dbData.currentWeather?.weatherData, forecast = dbData.forecast?.forecastData)
         }
     }
-}
-
-// Extension function for coordinate comparison
-fun Double.approxEquals(other: Double, epsilon: Double = 0.0001): Boolean {
-    return abs(this - other) < epsilon
 }

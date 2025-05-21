@@ -1,26 +1,20 @@
 package com.example.weatherwise.data.repository
+import com.example.weatherwise.data.model.LocationWithWeather
 
-
-
-
-import com.example.weatherwise.data.model.CurrentWeatherData
-import com.example.weatherwise.data.model.FavouritePlace
-import com.example.weatherwise.data.model.WeatherResponse
 
 
 
 interface IWeatherRepository {
 
+    suspend fun setCurrentLocation(lat: Double, lon: Double, units: String)
+    suspend fun getCurrentLocationWithWeather(forceRefresh: Boolean = false, isNetworkAvailable: Boolean = true): LocationWithWeather?
 
-    // Remote data operations
-    suspend fun get5DayForecast(lat: Double, lon: Double, units: String): WeatherResponse?
 
-    suspend fun getCurrentWeather(lat: Double, lon: Double, units: String, forceRefresh: Boolean = false, isNetworkAvailable: Boolean): CurrentWeatherData?
+    suspend fun addFavoriteLocation(lat: Double, lon: Double, name: String, units: String): Boolean
+    suspend fun removeFavoriteLocation(locationId: String)
+    suspend fun getFavoriteLocationsWithWeather(): List<LocationWithWeather>
 
-    // Local data operations
-    suspend fun getFavoriteLocations(): List<FavouritePlace>
-    suspend fun addFavoriteLocation(location: FavouritePlace, weatherData: CurrentWeatherData)
-    suspend fun removeFavoriteLocation(location: FavouritePlace)
-    suspend fun getWeatherForFavorite(locationId: Int): CurrentWeatherData?
 
+    suspend fun refreshLocation(locationId: String, units: String): Boolean
+    suspend fun deleteLocation(locationId: String)
 }

@@ -1,124 +1,148 @@
+
+
 package com.example.weatherwise.data.repository
 
+import android.util.Log
 import com.example.weatherwise.data.local.ILocalDataSource
-import com.example.weatherwise.data.local.ModelConverter
-import com.example.weatherwise.data.model.CurrentWeatherData
-import com.example.weatherwise.data.model.FavouritePlace
+import com.example.weatherwise.data.model.LocationEntity
+import com.example.weatherwise.data.model.LocationWithWeather
 import com.example.weatherwise.data.model.WeatherResponse
 import com.example.weatherwise.data.remote.IWeatherRemoteDataSource
+import java.util.UUID
 
-class WeatherRepositoryImpl private constructor(
-    private val remoteDataSource: IWeatherRemoteDataSource,
-    private val localDataSource: ILocalDataSource) : IWeatherRepository {
+class WeatherRepositoryImpl private constructor(private val remoteDataSource: IWeatherRemoteDataSource, private val localDataSource: ILocalDataSource) : IWeatherRepository {
 
     companion object {
         @Volatile
         private var instance: WeatherRepositoryImpl? = null
 
-        fun getInstance(
-            remoteDataSource: IWeatherRemoteDataSource,
-            localDataSource: ILocalDataSource): WeatherRepositoryImpl {
+        private const val TAG = "WeatherRepository"
+        private const val DEFAULT_UNITS = "metric"
+
+        fun getInstance(remoteDataSource: IWeatherRemoteDataSource, localDataSource: ILocalDataSource): WeatherRepositoryImpl {
             return instance ?: synchronized(this) {
-                instance ?: WeatherRepositoryImpl(remoteDataSource, localDataSource).also {
-                    instance = it
-                }
+                val temp = WeatherRepositoryImpl(remoteDataSource, localDataSource)
+                instance = temp
+                temp
             }
         }
     }
 
-
-    override suspend fun get5DayForecast(lat: Double, lon: Double, units: String): WeatherResponse? {
-        return remoteDataSource.get5DayForecast(lat, lon, units)
+    override suspend fun setCurrentLocation(lat: Double, lon: Double, units: String)
+    {
+        localDataSource.clearCurrentLocationFlag()
+        val locationId = getOrCreateLocationId(lat, lon, isCurrent = true)
+        fetchAndSaveWeatherData(locationId, lat, lon, units)
+        localDataSource.setCurrentLocation(locationId)
     }
 
-    override suspend fun getCurrentWeather(
-        lat: Double,
-        lon: Double,
-        units: String,
-        forceRefresh: Boolean,
-        isNetworkAvailable: Boolean
-    ): CurrentWeatherData? {
-        // Try to find matching location (with coordinate tolerance)
-        val existingLocation = localDataSource.findLocationByCoordinates(lat, lon)
+    override suspend fun getCurrentLocationWithWeather(forceRefresh: Boolean, isNetworkAvailable: Boolean): LocationWithWeather?
+    {
+        val currentLocation = localDataSource.getCurrentLocation() ?: return null
 
-        // Case 1: Force refresh (only if network available)
-        if (forceRefresh) {
-            return if (isNetworkAvailable) {
-                fetchAndSaveCurrentWeather(lat, lon, units, existingLocation?.id, true)
-            } else {
-                existingLocation?.id?.let { localDataSource.getWeatherDataForLocation(it) }
-            }
-        }
-
-        // Case 2: Return local data if available
-        existingLocation?.id?.let { locationId ->
-            return localDataSource.getWeatherDataForLocation(locationId)
-        }
-
-        // Case 3: No existing location - fetch if online
-        return if (isNetworkAvailable) {
-            fetchAndSaveCurrentWeather(lat, lon, units, null, true)
-        } else {
-            // Last resort: return most recent data
-            localDataSource.getMostRecentWeatherData()
-        }
-    }
-
-    private suspend fun fetchAndSaveCurrentWeather(
-        lat: Double,
-        lon: Double,
-        units: String,
-        locationId: Int?,
-        isCurrentLocation: Boolean = false
-    ): CurrentWeatherData? {
         return try {
-            remoteDataSource.getCurrentWeather(lat, lon, units)?.let { response ->
-                // Clear previous current location
-                localDataSource.clearCurrentLocationFlag()
+            if (forceRefresh && isNetworkAvailable) {
+                fetchAndSaveWeatherData(currentLocation.id, currentLocation.latitude, currentLocation.longitude, DEFAULT_UNITS)
+            }
 
-                val finalLocationId = locationId ?: run {
-                    val newLocation = ModelConverter.weatherResponseToFavoriteLocation(
-                        response, lat, lon, isCurrentLocation
-                    )
-                    localDataSource.insertFavoriteLocation(newLocation)
-                    newLocation.id
-                }
+            val currentWeather = localDataSource.getCurrentWeather(currentLocation.id)
+            val forecast = localDataSource.getForecast(currentLocation.id)
 
-                // Update current location flag if needed
-                if (isCurrentLocation) {
-                    localDataSource.getFavoriteLocationById(finalLocationId)?.let { location ->
-                        localDataSource.setCurrentLocation(location.copy(isCurrentLocation = true))
-                    }
-                }
-
-                val weatherData = ModelConverter.weatherResponseToCurrentWeatherData(response, finalLocationId)
-                localDataSource.saveWeatherDataForLocation(weatherData)
-                weatherData
+            if (currentWeather == null && forecast == null && isNetworkAvailable)
+            {
+                fetchAndSaveWeatherData(currentLocation.id, currentLocation.latitude, currentLocation.longitude, DEFAULT_UNITS)
+                LocationWithWeather(location = currentLocation, currentWeather = localDataSource.getCurrentWeather(currentLocation.id), forecast = localDataSource.getForecast(currentLocation.id))
+            }
+            else {
+                LocationWithWeather(location = currentLocation, currentWeather = currentWeather, forecast = forecast)
             }
         } catch (e: Exception) {
-            locationId?.let { localDataSource.getWeatherDataForLocation(it) }
+            Log.e(TAG, "Error getting location with weather", e)
+            null
         }
     }
 
-
-
-    override suspend fun getFavoriteLocations(): List<FavouritePlace> {
-        return localDataSource.getAllFavoriteLocations()
+    override suspend fun addFavoriteLocation(lat: Double, lon: Double, name: String, units: String): Boolean {
+        return try {
+            val locationId = getOrCreateLocationId(lat, lon, isFavorite = true)
+            Log.d(TAG, "Setting favorite status for $locationId")
+            localDataSource.setFavoriteStatus(locationId, true)
+            localDataSource.updateLocationName(locationId, name)
+            fetchAndSaveWeatherData(locationId, lat, lon, units)
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error adding favorite", e)
+            false
+        }
     }
 
-    override suspend fun addFavoriteLocation(location: FavouritePlace, weatherData: CurrentWeatherData) {
-        localDataSource.insertFavoriteLocation(location)
-        localDataSource.saveWeatherDataForLocation(weatherData)
+    override suspend fun removeFavoriteLocation(locationId: String) {
+        localDataSource.setFavoriteStatus(locationId, false)
     }
 
-    override suspend fun removeFavoriteLocation(location: FavouritePlace) {
-        localDataSource.deleteFavoriteLocation(location)
+    override suspend fun getFavoriteLocationsWithWeather(): List<LocationWithWeather> {
+        return localDataSource.getFavoriteLocations().mapNotNull { location ->
+            localDataSource.getLocationWithWeather(location.id)
+        }
     }
 
-    override suspend fun getWeatherForFavorite(locationId: Int): CurrentWeatherData? {
-        return localDataSource.getWeatherDataForLocation(locationId)
+    override suspend fun refreshLocation(locationId: String, units: String): Boolean {
+        return try {
+            val location = localDataSource.getLocation(locationId) ?: return false
+            fetchAndSaveWeatherData(locationId, location.latitude, location.longitude, units)
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error refreshing location", e)
+            false
+        }
+    }
+
+    override suspend fun deleteLocation(locationId: String) {
+        localDataSource.deleteLocation(locationId)
     }
 
 
 
+    private suspend fun fetchAndSaveWeatherData(locationId: String, lat: Double, lon: Double, units: String) {
+        try {
+            val currentWeatherResponse = remoteDataSource.getCurrentWeather(lat, lon, units)
+            val forecastResponse = remoteDataSource.get5DayForecast(lat, lon, units)
+
+            currentWeatherResponse?.let {
+                Log.d(TAG, "Saving weather for $locationId")
+                localDataSource.saveCurrentWeather(locationId, it)
+            } ?: Log.e(TAG, "Null weather response")
+
+            forecastResponse?.let {
+                Log.d(TAG, "Saving forecast for $locationId")
+                localDataSource.saveForecast(locationId, it)
+            } ?: Log.e(TAG, "Null forecast response")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching/saving weather", e)
+        }
+    }
+
+    private suspend fun getOrCreateLocationId(lat: Double, lon: Double, isCurrent: Boolean = false, isFavorite: Boolean = false): String {
+        Log.d(TAG, "Looking for location at ($lat, $lon)")
+        val existing = localDataSource.findLocationByCoordinates(lat, lon)
+
+        return if (existing != null) {
+            Log.d(TAG, "Found existing location: ${existing.id}")
+
+            if (isCurrent && !existing.isCurrent) {
+                localDataSource.setCurrentLocation(existing.id)
+            }
+
+            if (isFavorite && !existing.isFavorite) {
+                localDataSource.setFavoriteStatus(existing.id, true)
+            }
+
+            existing.id
+        } else {
+            val newLocation = LocationEntity(id = UUID.randomUUID().toString(), name = "Location (${"%.2f".format(lat)}, ${"%.2f".format(lon)})", latitude = lat, longitude = lon, isCurrent = isCurrent, isFavorite = isFavorite)
+            Log.d(TAG, "Creating new location: ${newLocation.id}")
+            localDataSource.saveLocation(newLocation)
+            newLocation.id
+        }
+    }
 }

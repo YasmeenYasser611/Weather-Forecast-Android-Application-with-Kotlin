@@ -1,6 +1,13 @@
 package com.example.weatherwise.data.model
 
-import java.io.Serializable
 
-
-data class City(val id: Int, val name: String, val country: String) : Serializable
+data class City(
+    val id: Long,
+    val name: String,
+    val coord: Coordinates,
+    val country: String,
+    val population: Long,
+    val timezone: Int,
+    val sunrise: Long,
+    val sunset: Long
+)
