@@ -1,4 +1,4 @@
-package com.example.weatherwise.mainscreen.viewmodel
+package com.example.weatherwise.features.mainscreen.viewmodel
 
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -12,10 +12,15 @@ import com.example.weatherwise.data.model.LocationWithWeather
 import com.example.weatherwise.data.model.WeatherData
 import com.example.weatherwise.data.model.WeatherResponse
 import com.example.weatherwise.data.repository.IWeatherRepository
+import com.example.weatherwise.features.settings.model.PreferencesManager
 import com.example.weatherwise.location.LocationHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class HomeViewModel(private val repository: IWeatherRepository, private val locationHelper: LocationHelper, private val connectivityManager: ConnectivityManager) : ViewModel() {
 
@@ -38,44 +43,52 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
     fun enableLocationServices() = locationHelper.enableLocationServices()
 
     fun getFreshLocation() {
-        if (!checkLocationPermissions()) {
-            _error.value = "Please grant location permissions"
-            return
-        }
-        if (!isLocationEnabled()) {
-            _error.value = "Please enable location services"
-            enableLocationServices()
-            return
-        }
-
-        _loading.value = true
-        locationHelper.getFreshLocation(
-            onLocationResult = { lat, lon, address ->
-                _locationData.postValue(LocationData(lat, lon, address))
-                fetchWeatherData(lat, lon, forceRefresh = false)
-            },
-            onError = { message ->
-                _loading.postValue(false)
-                _error.postValue(message)
+        when (repository.getLocationMethod()) {
+            PreferencesManager.LOCATION_MANUAL -> {
+                // Get manual location WITH address from preferences
+                repository.getManualLocationWithAddress()?.let { (lat, lon, address) ->
+                    val displayAddress = if (address.isNotEmpty()) address else "Selected Location"
+                    _locationData.postValue(LocationData(lat, lon, displayAddress))
+                    fetchWeatherData(lat, lon, forceRefresh = true)
+                } ?: run {
+                    _error.postValue("No manual location set")
+                }
             }
-        )
-    }
+            PreferencesManager.LOCATION_GPS -> {
+                // Existing GPS location code
+                if (!checkLocationPermissions()) {
+                    _error.value = "Please grant location permissions"
+                    return
+                }
+                if (!isLocationEnabled()) {
+                    _error.value = "Please enable location services"
+                    enableLocationServices()
+                    return
+                }
 
-    fun refreshWeatherData() {
-        _locationData.value?.let {
-            _loading.value = true
-            refreshCurrentWeatherWithLocation(it.latitude, it.longitude)
-        } ?: run {
-            _error.value = "No location available to refresh"
+                _loading.value = true
+                locationHelper.getFreshLocation(
+                    onLocationResult = { lat, lon, address ->
+                        _locationData.postValue(LocationData(lat, lon, address))
+                        fetchWeatherData(lat, lon, forceRefresh = false)
+                    },
+                    onError = { message ->
+                        _loading.postValue(false)
+                        _error.postValue(message)
+                    }
+                )
+            }
         }
     }
+
+
 
     private fun refreshCurrentWeatherWithLocation(lat: Double, lon: Double) {
         viewModelScope.launch {
             _loading.value = true
             _error.value = null
             try {
-                repository.setCurrentLocation(lat, lon, "metric")
+                repository.setCurrentLocation(lat, lon)
                 val freshData = repository.getCurrentLocationWithWeather(forceRefresh = true, isNetworkAvailable = true)
 
                 if (freshData != null) {
@@ -97,11 +110,13 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
             _loading.value = true
             _error.value = null
             try {
-                repository.setCurrentLocation(lat, lon, "metric")
+                val units = repository.getPreferredUnits()
+                repository.setCurrentLocation(lat, lon)
                 val data = repository.getCurrentLocationWithWeather(
                     forceRefresh = forceRefresh,
                     isNetworkAvailable = isNetworkAvailable()
                 )
+
 
                 if (data != null) {
                     postWeatherAndLocation(lat, lon, data)
@@ -182,7 +197,7 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
                 }
 
                 Log.d("HomeViewModel", "Refreshing location $locationId")
-                val success = repository.refreshLocation(locationId, "metric")
+                val success = repository.refreshLocation(locationId)
                 if (!success) {
                     _error.value = "Refresh failed"
                     return@launch
@@ -257,6 +272,58 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
 
 
 
+
+     fun refreshWeatherData() {
+        viewModelScope.launch {
+            _loading.value = true
+            try {
+                val data = repository.getCurrentLocationWithWeather(true, isNetworkAvailable())
+                data?.let {
+                    postWeatherAndLocation(it.location.latitude, it.location.longitude, it)
+                } ?: run {
+                    _error.postValue("No weather data available")
+                }
+            } catch (e: Exception) {
+                _error.postValue("Error refreshing weather: ${e.message}")
+            } finally {
+                _loading.value = false
+            }
+        }
+    }
+
+    // In HomeViewModel.kt
+    fun handleManualLocationSelection(lat: Double, lon: Double) {
+        viewModelScope.launch {
+            _loading.value = true
+            try {
+                // Step 1: Get address from coordinates
+                val address = withContext(Dispatchers.IO) {
+                    try {
+                        locationHelper.getAddressFromLocation(lat, lon) { address:String ->
+                            return@getAddressFromLocation address
+                        }
+                        "Selected Location" // fallback
+                    } catch (e: Exception) {
+                        "Selected Location" // fallback
+                    }
+                }
+
+                // Step 2: Save to repository
+                repository.setManualLocation(lat, lon, address)
+
+                // Step 3: Update location data
+                _locationData.postValue(LocationData(lat, lon, address))
+
+                // Step 4: Fetch weather data
+                fetchWeatherData(lat, lon, true)
+
+            } catch (e: Exception) {
+                _error.postValue("Error handling location: ${e.message}")
+            } finally {
+                _loading.value = false
+            }
+        }
+    }
 
 
 }

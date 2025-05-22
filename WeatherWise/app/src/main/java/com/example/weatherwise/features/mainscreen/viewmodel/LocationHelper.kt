@@ -17,6 +17,8 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import java.util.Locale
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class LocationHelper(private val context: Context) {
 
@@ -127,6 +129,69 @@ class LocationHelper(private val context: Context) {
         locationCallback?.let {
             fusedClient.removeLocationUpdates(it)
             locationCallback = null
+        }
+    }
+
+    // Existing function - keeping exactly as is
+    fun getAddressFromLocation(
+        lat: Double,
+        lon: Double,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        try {
+            val geocoder = Geocoder(context, Locale.getDefault())
+            val addresses = geocoder.getFromLocation(lat, lon, 1)
+            if (addresses?.isNotEmpty() == true) {
+                val address = addresses[0].getAddressLine(0) ?: "Unknown address"
+                onSuccess(address)
+            } else {
+                onError("No address found")
+            }
+        } catch (e: Exception) {
+            onError(e.message ?: "Error getting address")
+        }
+    }
+
+    // Existing function - keeping exactly as is
+    suspend fun getAddressFromLocation(lat: Double, lon: Double, any: Any): String {
+        return suspendCoroutine { continuation ->
+            this.getAddressFromLocation(lat, lon,
+                onSuccess = { address ->
+                    continuation.resume(address)
+                },
+                onError = {
+                    continuation.resume("Selected Location")
+                }
+            )
+        }
+    }
+
+    /**
+     * NEW FUNCTION: Gets the address from latitude and longitude coordinates
+     * @param latitude The latitude of the location
+     * @param longitude The longitude of the location
+     * @return Pair containing (address: String, error: String?) where error is null if successful
+     */
+    // Make sure this function is properly implemented
+    fun getLocationAddress(latitude: Double, longitude: Double): Pair<String, String?> {
+        return try {
+            val geocoder = Geocoder(context, Locale.getDefault())
+            val addresses = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                geocoder.getFromLocation(latitude, longitude, 1)
+            } else {
+                @Suppress("DEPRECATION")
+                geocoder.getFromLocation(latitude, longitude, 1)
+            }
+
+            if (addresses?.isNotEmpty() == true) {
+                val address = addresses[0].getAddressLine(0) ?: "Unknown address"
+                Pair(address, null)
+            } else {
+                Pair("Unknown address", "No address found")
+            }
+        } catch (e: Exception) {
+            Pair("Unknown address", e.message ?: "Error getting address")
         }
     }
 }

@@ -1,6 +1,6 @@
 
 
-package com.example.weatherwise.mainscreen.viewmodel
+package com.example.weatherwise.features.mainscreen.viewmodel
 
 import android.net.ConnectivityManager
 import androidx.lifecycle.ViewModel

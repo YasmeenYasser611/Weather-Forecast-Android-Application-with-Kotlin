@@ -2,4 +2,23 @@
     <string name="app_name">WeatherWise</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="settings">Settings</string>
+    <string name="location_settings">Location Settings</string>
+    <string name="use_gps_location">Use GPS Location</string>
+    <string name="select_location_manually">Select Location Manually</string>
+    <string name="select_on_map">Select on Map</string>
+    <string name="units_settings">Units Settings</string>
+    <string name="temperature_unit">Temperature Unit</string>
+    <string name="celsius">Celsius (°C)</string>
+    <string name="fahrenheit">Fahrenheit (°F)</string>
+    <string name="kelvin">Kelvin (K)</string>
+    <string name="wind_speed_unit">Wind Speed Unit</string>
+    <string name="meters_sec">Meters/sec</string>
+    <string name="miles_hour">Miles/hour</string>
+    <string name="language_settings">Language</string>
+    <string name="english">English</string>
+    <string name="arabic">العربية</string>
+    <string name="save_settings">Save Settings</string>
+    <string name="notifications_settings">Notifications</string>
+    <string name="enable_notifications">Enable Notifications</string>
 </resources>

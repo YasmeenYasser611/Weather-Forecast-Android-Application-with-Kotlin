@@ -37,8 +37,8 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_settings -> {
-//                    navController.navigate(R.id.settingsFragment)
-//                    drawerLayout.closeDrawer(GravityCompat.START)
+                    navController.navigate(R.id.settingsFragment)
+                    drawerLayout.closeDrawer(GravityCompat.START)
                     true
                 }
                 // Add other menu items here

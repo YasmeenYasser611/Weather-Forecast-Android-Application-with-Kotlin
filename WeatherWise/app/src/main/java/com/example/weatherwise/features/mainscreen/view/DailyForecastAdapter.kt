@@ -1,4 +1,4 @@
-package com.example.weatherwise.mainscreen.view
+package com.example.weatherwise.features.mainscreen.view
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.weatherwise.data.model.DailyForecast
 import com.example.weatherwise.databinding.ItemDailyForecastBinding
-import com.example.weatherwise.mainscreen.viewmodel.WeatherIconMapper
+import com.example.weatherwise.features.mainscreen.viewmodel.WeatherIconMapper
 
 class DailyForecastAdapter :
     ListAdapter<DailyForecast, DailyForecastAdapter.DailyForecastViewHolder>(DailyForecastDiffUtil()) {

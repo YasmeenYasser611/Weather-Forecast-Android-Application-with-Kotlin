@@ -11,14 +11,21 @@ import java.io.IOException
 
 class WeatherRemoteDataSourceImpl(private val weatherService: WeatherService) : IWeatherRemoteDataSource
 {
-
-    override suspend fun get5DayForecast(lat: Double, lon: Double, units: String, lang: String): WeatherResponse
-    {
-        return weatherService.get5DayForecast(lat, lon, units, lang)
+    override suspend fun getCurrentWeather(lat: Double, lon: Double, units: String, lang: String): CurrentWeatherResponse? {
+        return try {
+            weatherService.getCurrentWeather(lat, lon, units, lang)
+        } catch (e: Exception) {
+            Log.e("WeatherRemoteDataSource", "Error fetching current weather", e)
+            null
+        }
     }
 
-    override suspend fun getCurrentWeather(lat: Double, lon: Double, units: String, lang: String): CurrentWeatherResponse
-    {
-        return weatherService.getCurrentWeather(lat, lon, units, lang)
+    override suspend fun get5DayForecast(lat: Double, lon: Double, units: String, lang: String): WeatherResponse? {
+        return try {
+            weatherService.get5DayForecast(lat, lon, units, lang)
+        } catch (e: Exception) {
+            Log.e("WeatherRemoteDataSource", "Error fetching forecast", e)
+            null
+        }
     }
 }

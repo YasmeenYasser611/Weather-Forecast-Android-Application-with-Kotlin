@@ -1,4 +1,4 @@
-package com.example.weatherwise.mainscreen.viewmodel
+package com.example.weatherwise.features.mainscreen.viewmodel
 
 
 

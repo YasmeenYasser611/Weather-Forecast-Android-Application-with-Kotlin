@@ -1,7 +1,8 @@
-package com.example.weatherwise.mainscreen.view
+package com.example.weatherwise.features.mainscreen.view
 
 import WeatherService
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Bundle
@@ -14,7 +15,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.weatherwise.MainActivity
 import com.example.weatherwise.R
@@ -26,9 +30,12 @@ import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentWeatherBinding
 import com.example.weatherwise.location.LocationHelper
-import com.example.weatherwise.mainscreen.viewmodel.HomeViewModel
-import com.example.weatherwise.mainscreen.viewmodel.HomeViewModelFactory
-import com.example.weatherwise.mainscreen.viewmodel.WeatherIconMapper
+import com.example.weatherwise.features.mainscreen.viewmodel.HomeViewModel
+import com.example.weatherwise.features.mainscreen.viewmodel.HomeViewModelFactory
+import com.example.weatherwise.features.mainscreen.viewmodel.WeatherIconMapper
+import com.example.weatherwise.features.settings.model.PreferencesManager
+import com.example.weatherwise.features.settings.viewmodel.SettingsViewModel
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -42,6 +49,7 @@ class HomeFragment : Fragment() {
     private lateinit var hourlyAdapter: HourlyForecastAdapter
     private lateinit var dailyAdapter: DailyForecastAdapter
     private lateinit var drawerLayout: DrawerLayout
+    private lateinit var preferencesManager: PreferencesManager
 
     companion object {
         const val MY_LOCATION_PERMISSION_ID = 123
@@ -56,11 +64,13 @@ class HomeFragment : Fragment() {
         return binding.root
     }
 
+    @SuppressLint("UnsafeRepeatOnLifecycleDetector")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         val context = requireContext()
         drawerLayout = requireActivity().findViewById(R.id.drawer_layout)
+        preferencesManager = PreferencesManager(context)
 
         // Setup menu button click listener
         binding.btnMenu.setOnClickListener {
@@ -71,7 +81,8 @@ class HomeFragment : Fragment() {
         vmFactory = HomeViewModelFactory(
             repository = WeatherRepositoryImpl.getInstance(
                 WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
-                LocalDataSourceImpl(LocalDatabase.getInstance(context).weatherDao())
+                LocalDataSourceImpl(LocalDatabase.getInstance(context).weatherDao()),
+                PreferencesManager(requireContext())
             ),
             locationHelper = LocationHelper(context),
             connectivityManager = context.getSystemService(ConnectivityManager::class.java)
@@ -96,6 +107,15 @@ class HomeFragment : Fragment() {
         }
         switchToHourlyForecast()
         viewModel.getFreshLocation()
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                SettingsViewModel.SettingsEventBus.settingsChanged.collect {
+                    // Refresh weather data when settings change
+                    viewModel.refreshWeatherData()
+                }
+            }
+        }
     }
 
     private fun setupRecyclerViews() {
@@ -166,7 +186,14 @@ class HomeFragment : Fragment() {
 
             binding.tvPressure.text = "${current.main.pressure} hPa"
             binding.tvHumidity.text = "${current.main.humidity}%"
-            binding.tvWindSpeed.text = "${current.wind.speed} m/s"
+
+            // Updated wind speed display with unit conversion
+            val windSpeed = when (preferencesManager.getWindSpeedUnit()) {
+                PreferencesManager.WIND_MILES_PER_HOUR -> current.wind.speed * 2.23694 // Convert m/s to mph
+                else -> current.wind.speed // Default to m/s
+            }
+            binding.tvWindSpeed.text = String.format("%.1f %s", windSpeed, preferencesManager.getWindSpeedUnitSymbol())
+
             binding.tvCloudCover.text = "${current.clouds.all}%"
             binding.tvVisibility.text = "${current.visibility} m"
             binding.tvUvIndex.text = "N/A" // UV Index not in CurrentWeatherResponse

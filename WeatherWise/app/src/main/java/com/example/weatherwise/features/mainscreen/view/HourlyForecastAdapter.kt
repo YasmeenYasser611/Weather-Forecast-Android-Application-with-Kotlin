@@ -1,4 +1,4 @@
-package com.example.weatherwise.mainscreen.view
+package com.example.weatherwise.features.mainscreen.view
 
 
 import android.annotation.SuppressLint
@@ -9,10 +9,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.weatherwise.data.model.HourlyForecast
 import com.example.weatherwise.databinding.ItemHourlyForecastBinding
-import com.example.weatherwise.mainscreen.viewmodel.WeatherIconMapper
+import com.example.weatherwise.features.mainscreen.viewmodel.WeatherIconMapper
 
 class HourlyForecastAdapter :
-    ListAdapter<HourlyForecast, HourlyForecastAdapter.HourlyForecastViewHolder>(HourlyForecastDiffUtil()) {
+    ListAdapter<HourlyForecast, HourlyForecastAdapter.HourlyForecastViewHolder>(
+        HourlyForecastDiffUtil()
+    ) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HourlyForecastViewHolder {
         val inflater = LayoutInflater.from(parent.context)
