@@ -20,6 +20,7 @@ import com.example.weatherwise.MainActivity
 import com.example.weatherwise.R
 import com.example.weatherwise.data.local.LocalDataSourceImpl
 import com.example.weatherwise.data.local.LocalDatabase
+import com.example.weatherwise.data.model.WeatherData
 import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
@@ -149,7 +150,7 @@ class HomeFragment : Fragment() {
         binding.rvHourlyForecast.visibility = View.GONE
     }
 
-    private fun updateWeatherUI(weatherData: HomeViewModel.WeatherData) {
+    private fun updateWeatherUI(weatherData: WeatherData) {
         weatherData.currentWeather?.let { current ->
             binding.tvTemperature.text = "${current.main.temp.toInt()}°"
 

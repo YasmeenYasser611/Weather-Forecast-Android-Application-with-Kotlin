@@ -10,7 +10,7 @@
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:src="@drawable/background_with_stars"
+            android:src="@drawable/starry_background"
             android:scaleType="centerCrop"
             android:contentDescription="Background" />
 
@@ -132,7 +132,7 @@
                         android:id="@+id/forecast_container"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/forecast_background"
+                        android:background="@drawable/rounded_background"
                         android:padding="16dp"
                         app:layout_constraintTop_toBottomOf="@id/iv_weather_background"
                         app:layout_constraintStart_toStartOf="parent"
@@ -200,7 +200,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginHorizontal="16dp"
                         android:layout_marginTop="16dp"
-                        android:background="@drawable/forecast_background"
+                        android:background="@drawable/rounded_background"
                         android:padding="16dp"
                         app:columnCount="3"
                         app:rowCount="2"

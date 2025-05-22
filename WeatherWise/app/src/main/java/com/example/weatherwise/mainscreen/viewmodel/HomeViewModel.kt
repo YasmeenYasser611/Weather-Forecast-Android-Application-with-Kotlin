@@ -7,7 +7,9 @@ import androidx.lifecycle.*
 import com.example.weatherwise.data.model.CurrentWeatherResponse
 import com.example.weatherwise.data.model.DailyForecast
 import com.example.weatherwise.data.model.HourlyForecast
+import com.example.weatherwise.data.model.LocationData
 import com.example.weatherwise.data.model.LocationWithWeather
+import com.example.weatherwise.data.model.WeatherData
 import com.example.weatherwise.data.model.WeatherResponse
 import com.example.weatherwise.data.repository.IWeatherRepository
 import com.example.weatherwise.location.LocationHelper
@@ -115,28 +117,55 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
     }
 
     private fun postWeatherAndLocation(lat: Double, lon: Double, data: LocationWithWeather) {
+        // Get current time in UTC seconds (matches API response format)
         val currentTime = System.currentTimeMillis() / 1000L
-        val nextDayTime = currentTime + 86400
-        val hourFormat = SimpleDateFormat("h a", Locale.getDefault())
+        // Extend range to ensure we get enough items (48 hours instead of 24)
+        val forecastEndTime = currentTime + 172800 // 48 hours in seconds
+        val hourFormat = SimpleDateFormat("h a", Locale.getDefault()).apply {
+            timeZone = TimeZone.getTimeZone("UTC") // Match API timezone
+        }
+
+        // Debug logging
+        Log.d("ForecastDebug", "Current time: ${Date(currentTime * 1000)} (${currentTime})")
+        Log.d("ForecastDebug", "Forecast end: ${Date(forecastEndTime * 1000)} (${forecastEndTime})")
+        Log.d("ForecastDebug", "Raw forecast items: ${data.forecast?.list?.size}")
+
+        // Process hourly forecast with improved filtering
+        val hourlyForecast = data.forecast?.list
+            ?.sortedBy { it.dt } // Ensure chronological order
+            ?.filter {
+                // Include items from current time onward with buffer
+                it.dt >= currentTime - 3600 && // 1 hour buffer
+                        it.dt <= forecastEndTime
+            }
+            ?.take(24) // Take exactly 24 items
+            ?.map {
+                HourlyForecast(
+                    timestamp = it.dt,
+                    temperature = it.main.temp,
+                    icon = it.weather.firstOrNull()?.icon,
+                    hour = hourFormat.format(Date(it.dt * 1000L))
+                )
+            }?.also {
+                Log.d("ForecastDebug", "Processed ${it.size} hourly items")
+                it.take(5).forEach { item ->
+                    Log.d("ForecastDebug", "Hourly item: ${item.hour} (${item.timestamp})")
+                }
+            }.orEmpty()
 
         _weatherData.value = WeatherData(
             currentWeather = data.currentWeather,
             forecast = data.forecast,
-            hourlyForecast = data.forecast?.list
-                ?.filter { it.dt in currentTime..nextDayTime }
-                ?.map {
-                    HourlyForecast(
-                        timestamp = it.dt,
-                        temperature = it.main.temp,
-                        icon = it.weather.firstOrNull()?.icon,
-                        hour = hourFormat.format(Date(it.dt * 1000L)))
-                }.orEmpty(),
+            hourlyForecast = hourlyForecast,
             dailyForecast = processDailyForecast(data.forecast)
         )
 
-        // Preserve the existing address if we have one, otherwise fall back to API data
-        val currentAddress = _locationData.value?.address
-        val newAddress = currentAddress ?: data.location.name ?: "${data.location.latitude}, ${data.location.longitude}"
+        // Handle address with improved fallback logic
+        val newAddress = when {
+            !_locationData.value?.address.isNullOrEmpty() -> _locationData.value!!.address
+            !data.location.name.isNullOrEmpty() -> data.location.name
+            else -> "${"%.4f".format(lat)}, ${"%.4f".format(lon)}"
+        }
 
         _locationData.value = LocationData(lat, lon, newAddress)
     }
@@ -221,15 +250,7 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
         locationHelper.stopLocationUpdates()
     }
 
-    // Data Classes
-    data class LocationData(val latitude: Double, val longitude: Double, val address: String)
 
-    data class WeatherData(
-        val currentWeather: CurrentWeatherResponse?,
-        val forecast: WeatherResponse?,
-        val hourlyForecast: List<HourlyForecast>?,
-        val dailyForecast: List<DailyForecast>?
-    )
 
 
 
