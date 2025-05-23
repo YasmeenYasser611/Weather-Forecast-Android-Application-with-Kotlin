@@ -10,11 +10,8 @@ import com.example.weatherwise.data.remote.IWeatherRemoteDataSource
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import java.util.UUID
 
-class WeatherRepositoryImpl private constructor(
-    private val remoteDataSource: IWeatherRemoteDataSource,
-    private val localDataSource: ILocalDataSource,
-    private val preferencesManager: PreferencesManager
-) : IWeatherRepository {
+class WeatherRepositoryImpl private constructor(private val remoteDataSource: IWeatherRemoteDataSource, private val localDataSource: ILocalDataSource, private val preferencesManager: PreferencesManager) : IWeatherRepository
+{
 
     companion object {
         @Volatile
@@ -22,11 +19,8 @@ class WeatherRepositoryImpl private constructor(
         private const val TAG = "WeatherRepository"
         private const val STALE_DATA_THRESHOLD = 24 * 60 * 60 * 1000L // 24 hours
 
-        fun getInstance(
-            remoteDataSource: IWeatherRemoteDataSource,
-            localDataSource: ILocalDataSource,
-            preferencesManager: PreferencesManager
-        ): WeatherRepositoryImpl {
+        fun getInstance(remoteDataSource: IWeatherRemoteDataSource, localDataSource: ILocalDataSource, preferencesManager: PreferencesManager): WeatherRepositoryImpl
+        {
             return instance ?: synchronized(this) {
                 val temp = WeatherRepositoryImpl(remoteDataSource, localDataSource, preferencesManager)
                 instance = temp
@@ -124,13 +118,7 @@ class WeatherRepositoryImpl private constructor(
         return preferencesManager.getManualLocationWithAddress()
     }
 
-    private suspend fun handleManualLocation(
-        lat: Double,
-        lon: Double,
-        address: String,
-        forceRefresh: Boolean,
-        isNetworkAvailable: Boolean
-    ): LocationWithWeather? {
+    private suspend fun handleManualLocation(lat: Double, lon: Double, address: String, forceRefresh: Boolean, isNetworkAvailable: Boolean): LocationWithWeather? {
         val locationId = getOrCreateLocationId(lat, lon, isCurrent = true)
         if (address.isNotEmpty()) {
             localDataSource.updateLocationName(locationId, address)
@@ -138,19 +126,12 @@ class WeatherRepositoryImpl private constructor(
         return fetchLocationWithWeather(locationId, forceRefresh, isNetworkAvailable)
     }
 
-    private suspend fun handleGpsLocation(
-        forceRefresh: Boolean,
-        isNetworkAvailable: Boolean
-    ): LocationWithWeather? {
+    private suspend fun handleGpsLocation(forceRefresh: Boolean, isNetworkAvailable: Boolean): LocationWithWeather? {
         val currentLocation = localDataSource.getCurrentLocation() ?: return null
         return fetchLocationWithWeather(currentLocation.id, forceRefresh, isNetworkAvailable)
     }
 
-    private suspend fun fetchLocationWithWeather(
-        locationId: String,
-        forceRefresh: Boolean,
-        isNetworkAvailable: Boolean
-    ): LocationWithWeather? {
+    private suspend fun fetchLocationWithWeather(locationId: String, forceRefresh: Boolean, isNetworkAvailable: Boolean): LocationWithWeather? {
         return try {
             val location = localDataSource.getLocation(locationId) ?: return null
             if (forceRefresh && isNetworkAvailable || needsRefresh(locationId)) {
@@ -165,17 +146,22 @@ class WeatherRepositoryImpl private constructor(
 
     private suspend fun fetchAndSaveWeatherData(locationId: String, lat: Double, lon: Double) {
         try {
-            localDataSource.deleteCurrentWeather(locationId)
-            localDataSource.deleteForecast(locationId)
-            localDataSource.deleteStaleWeather(System.currentTimeMillis() - STALE_DATA_THRESHOLD)
 
             val units = preferencesManager.getApiUnits()
             val lang = preferencesManager.getLanguageCode()
-
             val currentWeatherResponse = remoteDataSource.getCurrentWeather(lat, lon, units, lang)
                 ?: throw Exception("Failed to fetch current weather")
             val forecastResponse = remoteDataSource.get5DayForecast(lat, lon, units, lang)
                 ?: throw Exception("Failed to fetch forecast")
+
+
+            localDataSource.deleteCurrentWeather(locationId)
+            localDataSource.deleteForecast(locationId)
+            localDataSource.deleteStaleWeather(System.currentTimeMillis() - STALE_DATA_THRESHOLD)
+
+
+
+
 
             localDataSource.saveCurrentWeather(locationId, currentWeatherResponse)
             localDataSource.saveForecast(locationId, forecastResponse)

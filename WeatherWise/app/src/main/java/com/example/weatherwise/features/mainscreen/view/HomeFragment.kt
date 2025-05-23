@@ -29,9 +29,7 @@ import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentWeatherBinding
 import com.example.weatherwise.location.LocationHelper
-import com.example.weatherwise.features.mainscreen.viewmodel.HomeViewModel
-import com.example.weatherwise.features.mainscreen.viewmodel.HomeViewModelFactory
-import com.example.weatherwise.features.mainscreen.viewmodel.WeatherIconMapper
+import com.example.weatherwise.features.mainscreen.viewmodel.*
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
@@ -44,14 +42,14 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var viewModel: HomeViewModel
-    private lateinit var vmFactory: HomeViewModelFactory
     private lateinit var hourlyAdapter: HourlyForecastAdapter
     private lateinit var dailyAdapter: DailyForecastAdapter
-    private lateinit var drawerLayout: DrawerLayout
     private lateinit var preferencesManager: PreferencesManager
 
-    companion object {
-        const val MY_LOCATION_PERMISSION_ID = 123
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        handlePermissionResult(permissions)
     }
 
     override fun onCreateView(
@@ -66,58 +64,36 @@ class HomeFragment : Fragment() {
     @SuppressLint("UnsafeRepeatOnLifecycleDetector")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        initViews()
+        setupViewModel()
+        setupAdapters()
+        setupObservers()
+        setupListeners()
+        viewModel.getFreshLocation()
+        setupSettingsObserver()
+    }
 
-        val context = requireContext()
-        drawerLayout = requireActivity().findViewById(R.id.drawer_layout)
-        preferencesManager = PreferencesManager(context)
+    private fun initViews() {
+        preferencesManager = PreferencesManager(requireContext())
+    }
 
-        // Setup menu button click listener
-        binding.btnMenu.setOnClickListener {
-            drawerLayout.openDrawer(GravityCompat.START)
-        }
-
-        // ViewModel setup
-        vmFactory = HomeViewModelFactory(
+    private fun setupViewModel() {
+      var vmFactory = HomeViewModelFactory(
             repository = WeatherRepositoryImpl.getInstance(
                 WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
-                LocalDataSourceImpl(LocalDatabase.getInstance(context).weatherDao()),
-                PreferencesManager(requireContext())
+                LocalDataSourceImpl(LocalDatabase.getInstance(requireContext()).weatherDao()),
+                preferencesManager
             ),
-            locationHelper = LocationHelper(context),
-            connectivityManager = context.getSystemService(ConnectivityManager::class.java)
+            locationHelper = LocationHelper(requireContext()),
+            connectivityManager = requireContext().getSystemService(ConnectivityManager::class.java)
         )
         viewModel = ViewModelProvider(this, vmFactory)[HomeViewModel::class.java]
+    }
 
+    private fun setupAdapters() {
         hourlyAdapter = HourlyForecastAdapter()
         dailyAdapter = DailyForecastAdapter()
 
-        setupRecyclerViews()
-        setupObservers()
-
-        binding.tabHourly.setOnClickListener { switchToHourlyForecast() }
-        binding.tabWeekly.setOnClickListener { switchToDailyForecast() }
-
-        binding.swipeRefreshLayout.setOnRefreshListener {
-            viewModel.refreshCurrentWeather()
-        }
-
-        binding.btnMenu.setOnClickListener {
-            (requireActivity() as MainActivity).drawerLayout.openDrawer(GravityCompat.START)
-        }
-        switchToHourlyForecast()
-        viewModel.getFreshLocation()
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                SettingsViewModel.SettingsEventBus.settingsChanged.collect {
-                    // Refresh weather data when settings change
-                    viewModel.refreshWeatherData()
-                }
-            }
-        }
-    }
-
-    private fun setupRecyclerViews() {
         binding.rvHourlyForecast.apply {
             layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
             adapter = hourlyAdapter
@@ -135,24 +111,82 @@ class HomeFragment : Fragment() {
         viewModel.weatherData.observe(viewLifecycleOwner) { weatherData ->
             weatherData?.let {
                 updateWeatherUI(it)
-                it.hourlyForecast?.let { hourly -> hourlyAdapter.submitList(hourly) }
-                it.dailyForecast?.let { daily -> dailyAdapter.submitList(daily) }
+                hourlyAdapter.submitList(it.hourlyForecast ?: emptyList())
+                dailyAdapter.submitList(it.dailyForecast ?: emptyList())
             }
         }
 
-        viewModel.locationData.observe(viewLifecycleOwner) { locationData ->
-            binding.tvCityName.text = locationData.address
+        viewModel.locationData.observe(viewLifecycleOwner) {
+            binding.tvCityName.text = it.address
         }
 
-        viewModel.loading.observe(viewLifecycleOwner) { isLoading ->
-            binding.swipeRefreshLayout.isRefreshing = isLoading
+        viewModel.loading.observe(viewLifecycleOwner) {
+            binding.swipeRefreshLayout.isRefreshing = it
         }
 
         viewModel.error.observe(viewLifecycleOwner) { error ->
-            error?.let {
-                Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
+            error?.let { Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show() }
+        }
+    }
+
+    private fun setupListeners() {
+        binding.tabHourly.setOnClickListener { switchToHourlyForecast() }
+        binding.tabWeekly.setOnClickListener { switchToDailyForecast() }
+        binding.swipeRefreshLayout.setOnRefreshListener { viewModel.refreshCurrentWeather() }
+        binding.btnMenu.setOnClickListener {
+            (requireActivity() as MainActivity).drawerLayout.openDrawer(GravityCompat.START)
+        }
+    }
+
+    private fun setupSettingsObserver() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                SettingsViewModel.SettingsEventBus.settingsChanged.collect {
+                    viewModel.refreshWeatherData()
+                }
             }
         }
+    }
+
+    private fun updateWeatherUI(weatherData: WeatherData) {
+        weatherData.currentWeather?.let { current ->
+            binding.tvTemperature.text = "${current.main.temp.toInt()}°"
+
+            val description = current.weather.firstOrNull()?.description?.capitalizeFirst() ?: "N/A"
+            binding.tvWeatherDescription.text =
+                "$description  H:${current.main.temp_max.toInt()}° L:${current.main.temp_min.toInt()}°"
+
+            current.weather.firstOrNull()?.icon?.let { iconCode ->
+                binding.weatherAnimation.apply {
+                    setAnimation(WeatherIconMapper.getLottieAnimationForIcon(iconCode))
+                    playAnimation()
+                }
+            }
+
+            binding.tvPressure.text = "${current.main.pressure} hPa"
+            binding.tvHumidity.text = "${current.main.humidity}%"
+            binding.tvWindSpeed.text = formatWindSpeed(current.wind.speed)
+            binding.tvCloudCover.text = "${current.clouds.all}%"
+            binding.tvVisibility.text = "${current.visibility} m"
+            binding.tvUvIndex.text = "N/A"
+
+            current.dt?.let { timestamp ->
+                binding.tvDateTime.text = SimpleDateFormat("MMM d, yyyy  hh:mm a", Locale.getDefault())
+                    .format(Date(timestamp * 1000))
+            }
+        }
+    }
+
+    private fun String.capitalizeFirst() = replaceFirstChar {
+        if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+    }
+
+    private fun formatWindSpeed(speed: Double): String {
+        val convertedSpeed = when (preferencesManager.getWindSpeedUnit()) {
+            PreferencesManager.WIND_MILES_PER_HOUR -> speed * 2.23694
+            else -> speed
+        }
+        return "%.1f %s".format(convertedSpeed, preferencesManager.getWindSpeedUnitSymbol())
     }
 
     private fun switchToHourlyForecast() {
@@ -169,66 +203,33 @@ class HomeFragment : Fragment() {
         binding.rvHourlyForecast.visibility = View.GONE
     }
 
-    private fun updateWeatherUI(weatherData: WeatherData) {
-        weatherData.currentWeather?.let { current ->
-            binding.tvTemperature.text = "${current.main.temp.toInt()}°"
-
-            val description = current.weather.firstOrNull()?.description?.replaceFirstChar { it.uppercase() } ?: "N/A"
-            binding.tvWeatherDescription.text =
-                "$description  H:${current.main.temp_max.toInt()}° L:${current.main.temp_min.toInt()}°"
-
-            current.weather.firstOrNull()?.icon?.let { iconCode ->
-                val animationFile = WeatherIconMapper.getLottieAnimationForIcon(iconCode)
-                binding.weatherAnimation.setAnimation(animationFile)
-                binding.weatherAnimation.playAnimation()
+    private fun handlePermissionResult(permissions: Map<String, Boolean>) {
+        when {
+            permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                    permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true -> {
+                if (viewModel.isLocationEnabled()) {
+                    viewModel.getFreshLocation()
+                } else {
+                    viewModel.enableLocationServices()
+                    showToast("Please turn on location")
+                }
             }
-
-            binding.tvPressure.text = "${current.main.pressure} hPa"
-            binding.tvHumidity.text = "${current.main.humidity}%"
-
-            // Updated wind speed display with unit conversion
-            val windSpeed = when (preferencesManager.getWindSpeedUnit()) {
-                PreferencesManager.WIND_MILES_PER_HOUR -> current.wind.speed * 2.23694 // Convert m/s to mph
-                else -> current.wind.speed // Default to m/s
-            }
-            binding.tvWindSpeed.text = String.format("%.1f %s", windSpeed, preferencesManager.getWindSpeedUnitSymbol())
-
-            binding.tvCloudCover.text = "${current.clouds.all}%"
-            binding.tvVisibility.text = "${current.visibility} m"
-            binding.tvUvIndex.text = "N/A" // UV Index not in CurrentWeatherResponse
-        }
-
-        weatherData.currentWeather?.dt?.let { timestamp ->
-            val dateFormat = SimpleDateFormat("MMM d, yyyy  hh:mm a", Locale.getDefault())
-            binding.tvDateTime.text = dateFormat.format(Date(timestamp * 1000))
-        }
-    }
-
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        ) {
-            if (viewModel.isLocationEnabled()) {
-                viewModel.getFreshLocation()
-            } else {
-                viewModel.enableLocationServices()
-                Toast.makeText(requireContext(), "Please turn on location", Toast.LENGTH_LONG).show()
-            }
-        } else {
-            Toast.makeText(requireContext(), "Location permissions denied", Toast.LENGTH_LONG).show()
+            else -> showToast("Location permissions denied")
         }
     }
 
     override fun onStart() {
         super.onStart()
+        checkLocationAvailability()
+    }
+
+    private fun checkLocationAvailability() {
         if (viewModel.checkLocationPermissions()) {
             if (viewModel.isLocationEnabled()) {
                 viewModel.getFreshLocation()
             } else {
                 viewModel.enableLocationServices()
-                Toast.makeText(requireContext(), "Please turn on location", Toast.LENGTH_LONG).show()
+                showToast("Please turn on location")
             }
         } else {
             requestPermissionLauncher.launch(
@@ -238,6 +239,10 @@ class HomeFragment : Fragment() {
                 )
             )
         }
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
     }
 
     override fun onDestroyView() {

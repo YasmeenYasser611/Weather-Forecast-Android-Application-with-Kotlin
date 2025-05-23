@@ -1,4 +1,4 @@
-package com.example.weatherwise.data.model.response
+package com.example.weatherwise.data.model.response.pojo
 
 data class Coordinates(
     val lon: Double,
