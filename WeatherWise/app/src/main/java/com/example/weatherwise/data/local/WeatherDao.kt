@@ -1,19 +1,13 @@
-
 package com.example.weatherwise.data.local
 
 import androidx.room.*
-import com.example.weatherwise.data.model.CurrentWeatherEntity
-import com.example.weatherwise.data.model.ForecastWeatherEntity
-import com.example.weatherwise.data.model.LocationEntity
-import com.example.weatherwise.data.model.LocationWithWeatherDB
+import com.example.weatherwise.data.model.entity.CurrentWeatherEntity
+import com.example.weatherwise.data.model.entity.ForecastWeatherEntity
+import com.example.weatherwise.data.model.entity.LocationEntity
+import com.example.weatherwise.data.model.entity.LocationWithWeatherDB
 
 @Dao
 interface WeatherDao {
-
-    // --------------------------
-    // Location operations
-    // --------------------------
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLocation(location: LocationEntity)
 
@@ -44,21 +38,11 @@ interface WeatherDao {
     @Query("DELETE FROM locations WHERE id = :locationId")
     suspend fun deleteLocation(locationId: String)
 
-
-    // --------------------------
-    // Current weather operations
-    // --------------------------
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCurrentWeather(weather: CurrentWeatherEntity)
 
     @Query("SELECT * FROM current_weather WHERE locationId = :locationId")
     suspend fun getCurrentWeather(locationId: String): CurrentWeatherEntity?
-
-
-    // --------------------------
-    // Forecast weather operations
-    // --------------------------
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertForecast(forecast: ForecastWeatherEntity)
@@ -66,15 +50,9 @@ interface WeatherDao {
     @Query("SELECT * FROM forecast_weather WHERE locationId = :locationId")
     suspend fun getForecast(locationId: String): ForecastWeatherEntity?
 
-
-    // --------------------------
-    // Combined operation
-    // --------------------------
-
     @Transaction
     @Query("SELECT * FROM locations WHERE id = :locationId")
     suspend fun getLocationWithWeather(locationId: String): LocationWithWeatherDB?
-
 
     @Delete
     fun deleteCurrentWeather(currentWeather: CurrentWeatherEntity)
@@ -84,6 +62,7 @@ interface WeatherDao {
 
     @Query("DELETE FROM forecast_weather WHERE locationId = :locationId")
     suspend fun deleteForecast(locationId: String)
+
+    @Query("DELETE FROM current_weather WHERE lastUpdated < :threshold")
+    suspend fun deleteStaleWeather(threshold: Long)
 }
-
-

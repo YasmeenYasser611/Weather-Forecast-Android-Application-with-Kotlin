@@ -6,8 +6,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.example.weatherwise.data.model.HourlyForecast
+import com.example.weatherwise.data.model.domain.HourlyForecast
 import com.example.weatherwise.databinding.ItemHourlyForecastBinding
 import com.example.weatherwise.features.mainscreen.viewmodel.WeatherIconMapper
 

@@ -1,4 +1,4 @@
-package com.example.weatherwise.data.model
+package com.example.weatherwise.data.model.entity
 
 import androidx.room.Embedded
 import androidx.room.Relation

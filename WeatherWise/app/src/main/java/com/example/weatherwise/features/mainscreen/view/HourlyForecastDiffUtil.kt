@@ -1,7 +1,7 @@
 package com.example.weatherwise.features.mainscreen.view
 
 import androidx.recyclerview.widget.DiffUtil
-import com.example.weatherwise.data.model.HourlyForecast
+import com.example.weatherwise.data.model.domain.HourlyForecast
 
 class HourlyForecastDiffUtil : DiffUtil.ItemCallback<HourlyForecast>() {
     override fun areItemsTheSame(oldItem: HourlyForecast, newItem: HourlyForecast): Boolean {

@@ -1,11 +1,11 @@
 package com.example.weatherwise.data.local
 
-import com.example.weatherwise.data.model.CurrentWeatherEntity
-import com.example.weatherwise.data.model.CurrentWeatherResponse
-import com.example.weatherwise.data.model.ForecastWeatherEntity
-import com.example.weatherwise.data.model.LocationEntity
-import com.example.weatherwise.data.model.LocationWithWeather
-import com.example.weatherwise.data.model.WeatherResponse
+import com.example.weatherwise.data.model.entity.CurrentWeatherEntity
+import com.example.weatherwise.data.model.entity.ForecastWeatherEntity
+import com.example.weatherwise.data.model.entity.LocationEntity
+import com.example.weatherwise.data.model.domain.LocationWithWeather
+import com.example.weatherwise.data.model.response.CurrentWeatherResponse
+import com.example.weatherwise.data.model.response.WeatherResponse
 
 class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource {
 
@@ -50,7 +50,7 @@ class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource
     }
 
     override suspend fun saveCurrentWeather(locationId: String, weather: CurrentWeatherResponse) {
-        weatherDao.insertCurrentWeather(CurrentWeatherEntity(locationId = locationId, weatherData = weather))
+        saveWeatherEntity(CurrentWeatherEntity(locationId, weather)) { weatherDao.insertCurrentWeather(it) }
     }
 
     override suspend fun getCurrentWeather(locationId: String): CurrentWeatherResponse? {
@@ -58,9 +58,7 @@ class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource
     }
 
     override suspend fun saveForecast(locationId: String, forecast: WeatherResponse) {
-        weatherDao.insertForecast(
-            ForecastWeatherEntity(locationId = locationId, forecastData = forecast)
-        )
+        saveWeatherEntity(ForecastWeatherEntity(locationId, forecast)) { weatherDao.insertForecast(it) }
     }
 
     override suspend fun getForecast(locationId: String): WeatherResponse? {
@@ -69,7 +67,11 @@ class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource
 
     override suspend fun getLocationWithWeather(locationId: String): LocationWithWeather? {
         return weatherDao.getLocationWithWeather(locationId)?.let { dbData ->
-            LocationWithWeather(location = dbData.location, currentWeather = dbData.currentWeather?.weatherData, forecast = dbData.forecast?.forecastData)
+            LocationWithWeather(
+                location = dbData.location,
+                currentWeather = dbData.currentWeather?.weatherData,
+                forecast = dbData.forecast?.forecastData
+            )
         }
     }
 
@@ -83,5 +85,13 @@ class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource
 
     override suspend fun deleteCurrentWeather(currentWeather: CurrentWeatherEntity) {
         weatherDao.deleteCurrentWeather(currentWeather)
+    }
+
+    override suspend fun deleteStaleWeather(threshold: Long) {
+        weatherDao.deleteStaleWeather(threshold)
+    }
+
+    private suspend fun <T> saveWeatherEntity(entity: T, insert: suspend (T) -> Unit) {
+        insert(entity)
     }
 }

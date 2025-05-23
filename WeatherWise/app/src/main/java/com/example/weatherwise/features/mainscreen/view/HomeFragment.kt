@@ -3,7 +3,6 @@ package com.example.weatherwise.features.mainscreen.view
 import WeatherService
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -24,7 +23,7 @@ import com.example.weatherwise.MainActivity
 import com.example.weatherwise.R
 import com.example.weatherwise.data.local.LocalDataSourceImpl
 import com.example.weatherwise.data.local.LocalDatabase
-import com.example.weatherwise.data.model.WeatherData
+import com.example.weatherwise.data.model.domain.WeatherData
 import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl

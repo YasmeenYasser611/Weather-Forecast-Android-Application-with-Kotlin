@@ -1,5 +1,5 @@
-import com.example.weatherwise.data.model.CurrentWeatherResponse
-import com.example.weatherwise.data.model.WeatherResponse
+import com.example.weatherwise.data.model.response.CurrentWeatherResponse
+import com.example.weatherwise.data.model.response.WeatherResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 

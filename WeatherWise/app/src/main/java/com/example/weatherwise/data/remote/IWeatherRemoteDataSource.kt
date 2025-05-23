@@ -1,7 +1,7 @@
 package com.example.weatherwise.data.remote
 
-import com.example.weatherwise.data.model.CurrentWeatherResponse
-import com.example.weatherwise.data.model.WeatherResponse
+import com.example.weatherwise.data.model.response.CurrentWeatherResponse
+import com.example.weatherwise.data.model.response.WeatherResponse
 
 
 interface IWeatherRemoteDataSource {

@@ -1,5 +1,5 @@
 package com.example.weatherwise.data.repository
-import com.example.weatherwise.data.model.LocationWithWeather
+import com.example.weatherwise.data.model.domain.LocationWithWeather
 
 
 

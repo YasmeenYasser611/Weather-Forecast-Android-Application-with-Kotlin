@@ -1,13 +1,9 @@
 package com.example.weatherwise.data.local
 
-
-
 import androidx.room.TypeConverter
-import com.example.weatherwise.data.model.CurrentWeatherResponse
-import com.example.weatherwise.data.model.WeatherResponse
+import com.example.weatherwise.data.model.response.CurrentWeatherResponse
+import com.example.weatherwise.data.model.response.WeatherResponse
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-
 
 class WeatherTypeConverters {
     private val gson = Gson()
@@ -19,7 +15,7 @@ class WeatherTypeConverters {
 
     @TypeConverter
     fun toCurrentWeatherResponse(value: String?): CurrentWeatherResponse? {
-        return gson.fromJson(value, object : TypeToken<CurrentWeatherResponse>() {}.type)
+        return value?.let { gson.fromJson(it, CurrentWeatherResponse::class.java) }
     }
 
     @TypeConverter
@@ -29,6 +25,6 @@ class WeatherTypeConverters {
 
     @TypeConverter
     fun toForecastWeatherResponse(value: String?): WeatherResponse? {
-        return gson.fromJson(value, object : TypeToken<WeatherResponse>() {}.type)
+        return value?.let { gson.fromJson(it, WeatherResponse::class.java) }
     }
 }

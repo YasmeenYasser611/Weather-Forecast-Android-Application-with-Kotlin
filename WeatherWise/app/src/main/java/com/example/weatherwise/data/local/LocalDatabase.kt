@@ -6,9 +6,9 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.example.weatherwise.data.model.CurrentWeatherEntity
-import com.example.weatherwise.data.model.ForecastWeatherEntity
-import com.example.weatherwise.data.model.LocationEntity
+import com.example.weatherwise.data.model.entity.CurrentWeatherEntity
+import com.example.weatherwise.data.model.entity.ForecastWeatherEntity
+import com.example.weatherwise.data.model.entity.LocationEntity
 
 @Database(entities = [LocationEntity::class, CurrentWeatherEntity::class, ForecastWeatherEntity::class], version = 1, exportSchema = false)
 @TypeConverters(WeatherTypeConverters::class)

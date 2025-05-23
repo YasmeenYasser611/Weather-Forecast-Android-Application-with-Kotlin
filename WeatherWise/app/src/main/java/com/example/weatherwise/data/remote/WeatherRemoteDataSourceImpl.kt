@@ -2,12 +2,8 @@ package com.example.weatherwise.data.remote
 
 import WeatherService
 import android.util.Log
-import com.example.weatherwise.data.model.CurrentWeatherResponse
-import com.example.weatherwise.data.model.WeatherResponse
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import retrofit2.HttpException
-import java.io.IOException
+import com.example.weatherwise.data.model.response.CurrentWeatherResponse
+import com.example.weatherwise.data.model.response.WeatherResponse
 
 class WeatherRemoteDataSourceImpl(private val weatherService: WeatherService) : IWeatherRemoteDataSource
 {

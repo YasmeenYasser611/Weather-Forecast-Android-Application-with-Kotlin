@@ -1,4 +1,4 @@
-package com.example.weatherwise.data.model
+package com.example.weatherwise.data.model.domain
 data class DailyForecast(
     val day: String,
     val highTemperature: Double,

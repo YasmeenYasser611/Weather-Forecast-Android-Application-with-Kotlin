@@ -4,13 +4,12 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.util.Log
 import androidx.lifecycle.*
-import com.example.weatherwise.data.model.CurrentWeatherResponse
-import com.example.weatherwise.data.model.DailyForecast
-import com.example.weatherwise.data.model.HourlyForecast
-import com.example.weatherwise.data.model.LocationData
-import com.example.weatherwise.data.model.LocationWithWeather
-import com.example.weatherwise.data.model.WeatherData
-import com.example.weatherwise.data.model.WeatherResponse
+import com.example.weatherwise.data.model.domain.DailyForecast
+import com.example.weatherwise.data.model.domain.HourlyForecast
+import com.example.weatherwise.data.model.domain.LocationData
+import com.example.weatherwise.data.model.domain.LocationWithWeather
+import com.example.weatherwise.data.model.domain.WeatherData
+import com.example.weatherwise.data.model.response.WeatherResponse
 import com.example.weatherwise.data.repository.IWeatherRepository
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import com.example.weatherwise.location.LocationHelper
@@ -19,8 +18,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 class HomeViewModel(private val repository: IWeatherRepository, private val locationHelper: LocationHelper, private val connectivityManager: ConnectivityManager) : ViewModel() {
 

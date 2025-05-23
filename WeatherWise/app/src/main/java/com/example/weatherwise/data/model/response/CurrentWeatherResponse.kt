@@ -1,4 +1,4 @@
-package com.example.weatherwise.data.model
+package com.example.weatherwise.data.model.response
 
 data class CurrentWeatherResponse(
     val coord: Coordinates,

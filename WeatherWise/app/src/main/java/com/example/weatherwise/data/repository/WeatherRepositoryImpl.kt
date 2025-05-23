@@ -2,8 +2,10 @@ package com.example.weatherwise.data.repository
 
 import android.util.Log
 import com.example.weatherwise.data.local.ILocalDataSource
-import com.example.weatherwise.data.model.LocationEntity
-import com.example.weatherwise.data.model.LocationWithWeather
+import com.example.weatherwise.data.model.entity.LocationEntity
+import com.example.weatherwise.data.model.domain.LocationWithWeather
+import com.example.weatherwise.data.model.response.CurrentWeatherResponse
+import com.example.weatherwise.data.model.response.WeatherResponse
 import com.example.weatherwise.data.remote.IWeatherRemoteDataSource
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import java.util.UUID
@@ -17,8 +19,8 @@ class WeatherRepositoryImpl private constructor(
     companion object {
         @Volatile
         private var instance: WeatherRepositoryImpl? = null
-
         private const val TAG = "WeatherRepository"
+        private const val STALE_DATA_THRESHOLD = 24 * 60 * 60 * 1000L // 24 hours
 
         fun getInstance(
             remoteDataSource: IWeatherRemoteDataSource,
@@ -33,7 +35,27 @@ class WeatherRepositoryImpl private constructor(
         }
     }
 
+    override suspend fun setCurrentLocation(lat: Double, lon: Double) {
+        localDataSource.clearCurrentLocationFlag()
+        val locationId = getOrCreateLocationId(lat, lon, isCurrent = true)
+        updateLocationWithManualAddress(locationId)
+        fetchAndSaveWeatherData(locationId, lat, lon)
+        localDataSource.setCurrentLocation(locationId)
+    }
 
+    override suspend fun getCurrentLocationWithWeather(forceRefresh: Boolean, isNetworkAvailable: Boolean): LocationWithWeather? {
+        return when (preferencesManager.getLocationMethod()) {
+            PreferencesManager.LOCATION_MANUAL -> {
+                preferencesManager.getManualLocationWithAddress()?.let { (lat, lon, address) ->
+                    handleManualLocation(lat, lon, address, forceRefresh, isNetworkAvailable)
+                }
+            }
+            PreferencesManager.LOCATION_GPS -> {
+                handleGpsLocation(forceRefresh, isNetworkAvailable)
+            }
+            else -> null
+        }
+    }
 
     override suspend fun addFavoriteLocation(lat: Double, lon: Double, name: String): Boolean {
         return try {
@@ -74,37 +96,91 @@ class WeatherRepositoryImpl private constructor(
         localDataSource.deleteLocation(locationId)
     }
 
-    // In WeatherRepositoryImpl.kt
+    override suspend fun getCurrentLocationId(): String? {
+        return localDataSource.getCurrentLocation()?.id
+    }
+
+    override fun getPreferredUnits(): String {
+        return preferencesManager.getApiUnits()
+    }
+
+    override fun getManualLocation(): Pair<Double, Double>? {
+        return preferencesManager.getManualLocation()
+    }
+
+    override fun getLocationMethod(): String {
+        return preferencesManager.getLocationMethod()
+    }
+
+    override suspend fun setManualLocation(lat: Double, lon: Double, address: String) {
+        preferencesManager.setManualLocation(lat, lon, address)
+        val locationId = getOrCreateLocationId(lat, lon, isCurrent = true)
+        localDataSource.updateLocationName(locationId, address)
+        Log.d(TAG, "Set manual location: $address, ID: $locationId")
+        fetchAndSaveWeatherData(locationId, lat, lon)
+    }
+
+    override fun getManualLocationWithAddress(): Triple<Double, Double, String>? {
+        return preferencesManager.getManualLocationWithAddress()
+    }
+
+    private suspend fun handleManualLocation(
+        lat: Double,
+        lon: Double,
+        address: String,
+        forceRefresh: Boolean,
+        isNetworkAvailable: Boolean
+    ): LocationWithWeather? {
+        val locationId = getOrCreateLocationId(lat, lon, isCurrent = true)
+        if (address.isNotEmpty()) {
+            localDataSource.updateLocationName(locationId, address)
+        }
+        return fetchLocationWithWeather(locationId, forceRefresh, isNetworkAvailable)
+    }
+
+    private suspend fun handleGpsLocation(
+        forceRefresh: Boolean,
+        isNetworkAvailable: Boolean
+    ): LocationWithWeather? {
+        val currentLocation = localDataSource.getCurrentLocation() ?: return null
+        return fetchLocationWithWeather(currentLocation.id, forceRefresh, isNetworkAvailable)
+    }
+
+    private suspend fun fetchLocationWithWeather(
+        locationId: String,
+        forceRefresh: Boolean,
+        isNetworkAvailable: Boolean
+    ): LocationWithWeather? {
+        return try {
+            val location = localDataSource.getLocation(locationId) ?: return null
+            if (forceRefresh && isNetworkAvailable || needsRefresh(locationId)) {
+                fetchAndSaveWeatherData(locationId, location.latitude, location.longitude)
+            }
+            localDataSource.getLocationWithWeather(locationId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching location with weather", e)
+            localDataSource.getLocationWithWeather(locationId) // Return cached data if available
+        }
+    }
+
     private suspend fun fetchAndSaveWeatherData(locationId: String, lat: Double, lon: Double) {
         try {
-            // Clear old data first
             localDataSource.deleteCurrentWeather(locationId)
             localDataSource.deleteForecast(locationId)
+            localDataSource.deleteStaleWeather(System.currentTimeMillis() - STALE_DATA_THRESHOLD)
 
-            // Get preferred units and language from PreferencesManager
             val units = preferencesManager.getApiUnits()
             val lang = preferencesManager.getLanguageCode()
 
-            // Fetch new data with units and language
             val currentWeatherResponse = remoteDataSource.getCurrentWeather(lat, lon, units, lang)
+                ?: throw Exception("Failed to fetch current weather")
             val forecastResponse = remoteDataSource.get5DayForecast(lat, lon, units, lang)
+                ?: throw Exception("Failed to fetch forecast")
 
-            // Save new data
-            currentWeatherResponse?.let {
-                localDataSource.saveCurrentWeather(locationId, it)
-            } ?: run {
-                Log.e(TAG, "Null current weather response")
-                throw Exception("Failed to fetch current weather")
-            }
-
-            forecastResponse?.let {
-                localDataSource.saveForecast(locationId, it)
-            } ?: run {
-                Log.e(TAG, "Null forecast response")
-                throw Exception("Failed to fetch forecast")
-            }
+            localDataSource.saveCurrentWeather(locationId, currentWeatherResponse)
+            localDataSource.saveForecast(locationId, forecastResponse)
         } catch (e: Exception) {
-            Log.e(TAG, "Error in fetchAndSaveWeatherData: ${e.message}")
+            Log.e(TAG, "Error fetching and saving weather data: ${e.message}", e)
             throw e
         }
     }
@@ -112,18 +188,14 @@ class WeatherRepositoryImpl private constructor(
     private suspend fun getOrCreateLocationId(lat: Double, lon: Double, isCurrent: Boolean = false, isFavorite: Boolean = false): String {
         Log.d(TAG, "Looking for location at ($lat, $lon)")
         val existing = localDataSource.findLocationByCoordinates(lat, lon)
-
         return if (existing != null) {
             Log.d(TAG, "Found existing location: ${existing.id}")
-
             if (isCurrent && !existing.isCurrent) {
                 localDataSource.setCurrentLocation(existing.id)
             }
-
             if (isFavorite && !existing.isFavorite) {
                 localDataSource.setFavoriteStatus(existing.id, true)
             }
-
             existing.id
         } else {
             val newLocation = LocationEntity(
@@ -140,134 +212,20 @@ class WeatherRepositoryImpl private constructor(
         }
     }
 
-    override suspend fun getCurrentLocationId(): String? {
-        return localDataSource.getCurrentLocation()?.id
-    }
-
-    override fun getPreferredUnits(): String {
-        return preferencesManager.getApiUnits()
-    }
-
-    override  fun getManualLocation(): Pair<Double, Double>? {
-        return preferencesManager.getManualLocation()
-    }
-
-    override fun getLocationMethod(): String {
-        return preferencesManager.getLocationMethod()
-    }
-
-
-    override fun getManualLocationWithAddress(): Triple<Double, Double, String>? {
-        return preferencesManager.getManualLocationWithAddress()
-    }
-
-    override suspend fun setCurrentLocation(lat: Double, lon: Double) {
-        localDataSource.clearCurrentLocationFlag()
-        val locationId = getOrCreateLocationId(lat, lon, isCurrent = true)
-
-
-        // Update location name if it's a manual location with address
+    private suspend fun updateLocationWithManualAddress(locationId: String) {
         if (preferencesManager.getLocationMethod() == PreferencesManager.LOCATION_MANUAL) {
-            getManualLocationWithAddress()?.let { (_, _, address) ->
-                Log.d("LocationDebug", " from current locationAddress fetched: $address")
+            preferencesManager.getManualLocationWithAddress()?.let { (_, _, address) ->
                 if (address.isNotEmpty()) {
                     localDataSource.updateLocationName(locationId, address)
+                    Log.d(TAG, "Updated location name to $address for ID: $locationId")
                 }
             }
         }
-
-        fetchAndSaveWeatherData(locationId, lat, lon)
-        localDataSource.setCurrentLocation(locationId)
     }
 
-    override suspend fun getCurrentLocationWithWeather(forceRefresh: Boolean, isNetworkAvailable: Boolean): LocationWithWeather? {
-        return when (preferencesManager.getLocationMethod()) {
-            PreferencesManager.LOCATION_MANUAL -> {
-                getManualLocationWithAddress()?.let { (lat, lon, address) ->
-                    handleManualLocation(lat, lon, address, forceRefresh, isNetworkAvailable)
-                }
-            }
-            PreferencesManager.LOCATION_GPS -> {
-                handleGpsLocation(forceRefresh, isNetworkAvailable)
-            }
-            else -> null
-        }
+    private suspend fun needsRefresh(locationId: String): Boolean {
+        val currentWeather = localDataSource.getCurrentWeather(locationId)
+        val forecast = localDataSource.getForecast(locationId)
+        return currentWeather == null || forecast == null || preferencesManager.hasTemperatureUnitChanged(getPreferredUnits())
     }
-
-    private suspend fun handleManualLocation(
-        lat: Double,
-        lon: Double,
-        address: String,
-        forceRefresh: Boolean,
-        isNetworkAvailable: Boolean
-    ): LocationWithWeather? {
-        // Ensure we have a current location set
-        val currentLocation = localDataSource.getCurrentLocation() ?: run {
-            setCurrentLocation(lat, lon)
-            localDataSource.getCurrentLocation()
-        } ?: return null
-
-        // Update location name if we have an address
-        if (address.isNotEmpty()) {
-            localDataSource.updateLocationName(currentLocation.id, address)
-        }
-
-        return fetchLocationWithWeather(currentLocation, forceRefresh, isNetworkAvailable)
-    }
-
-    private suspend fun handleGpsLocation(
-        forceRefresh: Boolean,
-        isNetworkAvailable: Boolean
-    ): LocationWithWeather? {
-        val currentLocation = localDataSource.getCurrentLocation() ?: return null
-        return fetchLocationWithWeather(currentLocation, forceRefresh, isNetworkAvailable)
-    }
-
-    private suspend fun fetchLocationWithWeather(
-        location: LocationEntity,
-        forceRefresh: Boolean,
-        isNetworkAvailable: Boolean
-    ): LocationWithWeather? {
-        return try {
-            if (forceRefresh && isNetworkAvailable) {
-                // Delete and recreate for fresh data
-                localDataSource.deleteLocation(location.id)
-                val newLocationId = getOrCreateLocationId(location.latitude, location.longitude, isCurrent = true)
-                fetchAndSaveWeatherData(newLocationId, location.latitude, location.longitude)
-                localDataSource.getLocationWithWeather(newLocationId)
-            } else {
-                // Check if we need to refresh
-                if (isNetworkAvailable &&
-                    (localDataSource.getCurrentWeather(location.id) == null ||
-                            localDataSource.getForecast(location.id) == null ||
-                            preferencesManager.hasTemperatureUnitChanged(getPreferredUnits()))) {
-                    fetchAndSaveWeatherData(location.id, location.latitude, location.longitude)
-                }
-                localDataSource.getLocationWithWeather(location.id)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting location with weather", e)
-            null
-        }
-    }
-
-    override suspend fun setManualLocation(lat: Double, lon: Double, address: String) {
-        // 1. Save to SharedPrefs
-        preferencesManager.setManualLocation(lat, lon, address)
-
-        // 2. Get/Create location ID
-        val locationId = getOrCreateLocationId(lat, lon, isCurrent = true)
-
-        // 3. Update name in DB
-        localDataSource.updateLocationName(locationId, address)
-
-        // 4. DEBUG: Verify update
-        val updatedLocation = localDataSource.getLocation(locationId)
-        Log.d("RepoDebug", "Updated location: ${updatedLocation?.name}")
-
-        // 5. Fetch weather
-        fetchAndSaveWeatherData(locationId, lat, lon)
-    }
-
-
 }
