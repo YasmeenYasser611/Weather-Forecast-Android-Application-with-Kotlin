@@ -15,7 +15,11 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class HomeViewModel(private val repository: IWeatherRepository, private val locationHelper: LocationHelper, private val connectivityManager: ConnectivityManager) : ViewModel() {
+class HomeViewModel(
+    private val repository: IWeatherRepository,
+    private val locationHelper: LocationHelper,
+    private val connectivityManager: ConnectivityManager
+) : ViewModel() {
 
     // LiveData declarations
     private val _locationData = MutableLiveData<LocationData>()
@@ -30,6 +34,9 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
     private val _loading = MutableLiveData<Boolean>()
     val loading: LiveData<Boolean> = _loading
 
+    private val _isTemporaryLocation = MutableLiveData<Boolean>(false)
+    val isTemporaryLocation: LiveData<Boolean> = _isTemporaryLocation
+
     // Location-related functions
     fun checkLocationPermissions(): Boolean = locationHelper.checkPermissions()
     fun isLocationEnabled(): Boolean = locationHelper.isLocationEnabled()
@@ -42,11 +49,30 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
         }
     }
 
+    fun loadTemporaryLocation(locationId: String) {
+        _isTemporaryLocation.value = true
+        viewModelScope.launch {
+            safeWeatherCall {
+                repository.getLocationWithWeather(locationId)?.let { data ->
+                    postWeatherAndLocation(data.location.latitude, data.location.longitude, data)
+                } ?: throw IllegalStateException("Location not found")
+            }
+        }
+    }
+
+    fun refreshCurrentWeather() {
+        refreshCurrentWeatherWithLocation()
+    }
+
     private fun handleManualLocation() {
         repository.getManualLocationWithAddress()?.let { (lat, lon, address) ->
-            val displayAddress = address.ifEmpty { "Selected Location" }
-            _locationData.postValue(LocationData(lat, lon, displayAddress))
-            fetchWeatherData(lat, lon, forceRefresh = true)
+            viewModelScope.launch {
+                safeWeatherCall {
+                    val displayAddress = address.ifEmpty { "Selected Location" }
+                    _locationData.postValue(LocationData(lat, lon, displayAddress))
+                    fetchWeatherData(lat, lon, forceRefresh = true)
+                }
+            }
         } ?: run {
             _error.postValue("No manual location set")
         }
@@ -66,8 +92,13 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
         _loading.value = true
         locationHelper.getFreshLocation(
             onLocationResult = { lat, lon, address ->
-                _locationData.postValue(LocationData(lat, lon, address))
-                fetchWeatherData(lat, lon, forceRefresh = false)
+                viewModelScope.launch {
+                    safeWeatherCall {
+                        repository.setCurrentLocation(lat, lon)
+                        _locationData.postValue(LocationData(lat, lon, address))
+                        fetchWeatherData(lat, lon, forceRefresh = false)
+                    }
+                }
             },
             onError = { message ->
                 _loading.postValue(false)
@@ -76,9 +107,7 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
         )
     }
 
-    // Weather data functions
     fun refreshWeatherData() = fetchWeatherData(forceRefresh = true)
-    fun refreshCurrentWeather() = refreshCurrentWeatherWithLocation()
 
     private fun refreshCurrentWeatherWithLocation() {
         viewModelScope.launch {
@@ -87,14 +116,16 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
                     ?: throw IllegalStateException("No current location set")
 
                 Log.d("HomeViewModel", "Refreshing location $locationId")
-                if (!repository.refreshLocation(locationId)) {
+                if (isNetworkAvailable() && !repository.refreshLocation(locationId)) {
                     throw IllegalStateException("Refresh failed")
                 }
 
-                repository.getCurrentLocationWithWeather(forceRefresh = false, isNetworkAvailable = true)
-                    ?.let { data ->
-                        postWeatherAndLocation(data.location.latitude, data.location.longitude, data)
-                    } ?: throw IllegalStateException("No data after refresh")
+                repository.getCurrentLocationWithWeather(
+                    forceRefresh = false,
+                    isNetworkAvailable = isNetworkAvailable()
+                )?.let { data ->
+                    postWeatherAndLocation(data.location.latitude, data.location.longitude, data)
+                } ?: throw IllegalStateException("No weather data available")
             }
         }
     }
@@ -110,17 +141,24 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
                 }
 
                 repository.setCurrentLocation(currentLat, currentLon)
-                repository.getCurrentLocationWithWeather(
+                val isNetworkAvailable = isNetworkAvailable()
+                val weatherData = repository.getCurrentLocationWithWeather(
                     forceRefresh = forceRefresh,
-                    isNetworkAvailable = isNetworkAvailable()
-                )?.let { data ->
-                    postWeatherAndLocation(currentLat, currentLon, data)
-                } ?: throw IllegalStateException("No weather data available")
+                    isNetworkAvailable = isNetworkAvailable
+                )
+
+                if (weatherData != null) {
+                    postWeatherAndLocation(currentLat, currentLon, weatherData)
+                } else if (!isNetworkAvailable) {
+                    // Show specific error for offline case with no cached data
+                    throw IllegalStateException("Failed to fetch current weather")
+                } else {
+                    throw IllegalStateException("No weather data available")
+                }
             }
         }
     }
 
-    // Data processing functions
     private fun postWeatherAndLocation(lat: Double, lon: Double, data: LocationWithWeather) {
         val currentTime = System.currentTimeMillis() / 1000L
         val hourlyForecast = processHourlyForecast(data.forecast, currentTime)
@@ -155,7 +193,8 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
                     timestamp = it.dt,
                     temperature = it.main.temp,
                     icon = it.weather.firstOrNull()?.icon,
-                    hour = hourFormat.format(Date(it.dt * 1000L)))
+                    hour = hourFormat.format(Date(it.dt * 1000L))
+                )
             }
             .orEmpty()
     }
@@ -187,7 +226,6 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
         }.sortedByDay(dateFormat)
     }
 
-    // Helper functions
     private fun String.capitalizeFirst() = replaceFirstChar {
         if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
     }
@@ -198,7 +236,7 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
         val todayIndex = days.indexOf(now)
 
         return sortedBy { forecast ->
-            val index = days.indexOf(forecast.day.take(3)) // Take first 3 chars to match "Sun", "Mon", etc.
+            val index = days.indexOf(forecast.day.take(3))
             (index - todayIndex + 7) % 7
         }
     }
@@ -217,8 +255,11 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
         _error.value = null
         try {
             block()
+        } catch (e: IllegalStateException) {
+            Log.e("HomeViewModel", "Weather error: ${e.message}", e)
+            _error.value = e.message // Use the specific message like "Failed to fetch current weather"
         } catch (e: Exception) {
-            Log.e("HomeViewModel", "Weather error", e)
+            Log.e("HomeViewModel", "Unexpected error", e)
             _error.value = "Error: ${e.message}"
         } finally {
             _loading.value = false
@@ -231,7 +272,17 @@ class HomeViewModel(private val repository: IWeatherRepository, private val loca
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
-    // Manual location handling
+    fun loadFavoriteDetails(locationId: String) {
+        viewModelScope.launch {
+            safeWeatherCall {
+                repository.getLocationWithWeather(locationId)?.let { data ->
+                    _isTemporaryLocation.value = true
+                    postWeatherAndLocation(data.location.latitude, data.location.longitude, data)
+                } ?: throw IllegalStateException("Location not found")
+            }
+        }
+    }
+
     fun handleManualLocationSelection(lat: Double, lon: Double) {
         viewModelScope.launch {
             safeWeatherCall {

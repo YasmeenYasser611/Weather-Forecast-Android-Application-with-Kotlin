@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.weatherwise.R
 import com.example.weatherwise.data.local.LocalDataSourceImpl
@@ -17,11 +18,14 @@ import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentMapBinding
+import com.example.weatherwise.features.fav.viewmodel.FavoritesViewModel
+import com.example.weatherwise.features.fav.viewmodel.FavoritesViewModelFactory
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModel
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModelFactory
 import com.example.weatherwise.location.LocationHelper
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.launch
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -33,7 +37,8 @@ class MapFragment : Fragment() {
 
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding!!
-    private lateinit var viewModel: SettingsViewModel
+    private lateinit var favoritesViewModel: FavoritesViewModel
+    private lateinit var settingsViewModel: SettingsViewModel
     private var selectedMarker: Marker? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,22 +61,27 @@ class MapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Initialize ViewModel with dependencies
-        val factory = SettingsViewModelFactory(
-            LocationHelper(requireContext()),
-            WeatherRepositoryImpl.getInstance(
-                WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
-                LocalDataSourceImpl(LocalDatabase.getInstance(requireContext()).weatherDao()),
-                PreferencesManager(requireContext())
-            ),
+        // Initialize ViewModels
+        val repository = WeatherRepositoryImpl.getInstance(
+            WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
+            LocalDataSourceImpl(LocalDatabase.getInstance(requireContext()).weatherDao()),
             PreferencesManager(requireContext())
         )
 
-        viewModel = ViewModelProvider(requireActivity(), factory)[SettingsViewModel::class.java]
+        // Initialize FavoritesViewModel
+        val favoritesFactory = FavoritesViewModelFactory(repository ,LocationHelper(requireContext()) )
+        favoritesViewModel = ViewModelProvider(this, favoritesFactory)[FavoritesViewModel::class.java]
+
+        // Initialize SettingsViewModel if needed
+        val settingsFactory = SettingsViewModelFactory(
+            LocationHelper(requireContext()),
+            repository,
+            PreferencesManager(requireContext())
+        )
+        settingsViewModel = ViewModelProvider(requireActivity(), settingsFactory)[SettingsViewModel::class.java]
 
         setupMap()
         setupListeners()
-        setupObservers()
     }
 
     private fun setupMap() {
@@ -108,18 +118,21 @@ class MapFragment : Fragment() {
     private fun setupListeners() {
         binding.btnSaveLocation.setOnClickListener {
             selectedMarker?.let { marker ->
-                binding.btnSaveLocation.isEnabled = false
-                binding.btnSaveLocation.text = "Saving..."
+                if (arguments?.getBoolean("for_favorite") == true) {
+                    saveAsFavorite(marker.position)
+                } else {
+                    binding.btnSaveLocation.isEnabled = false
+                    binding.btnSaveLocation.text = "Saving..."
+                    settingsViewModel.setManualLocationCoordinates(marker.position.latitude, marker.position.longitude)
 
-                viewModel.setManualLocationCoordinates(marker.position.latitude, marker.position.longitude)
-
-                // Observe the save completion
-                viewModel.saveComplete.observe(viewLifecycleOwner) { success ->
-                    if (success) {
-                        findNavController().navigateUp() // Go back to Settings
-                    } else {
-                        binding.btnSaveLocation.isEnabled = true
-                        binding.btnSaveLocation.text = "Save Location"
+                    // Observe the save completion
+                    settingsViewModel.saveComplete.observe(viewLifecycleOwner) { success ->
+                        if (success) {
+                            findNavController().navigateUp() // Go back to Settings
+                        } else {
+                            binding.btnSaveLocation.isEnabled = true
+                            binding.btnSaveLocation.text = "Save Location"
+                        }
                     }
                 }
             } ?: run {
@@ -132,10 +145,45 @@ class MapFragment : Fragment() {
         }
     }
 
-    private fun setupObservers() {
-        viewModel.error.observe(viewLifecycleOwner) { error ->
-            error?.let {
-                Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+    private fun saveAsFavorite(geoPoint: GeoPoint) {
+        binding.btnSaveLocation.isEnabled = false
+        binding.btnSaveLocation.text = "Saving..."
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val address = favoritesViewModel.getAddressForCoordinates(geoPoint.latitude, geoPoint.longitude)
+                val locationName = address ?: "Location (${"%.2f".format(geoPoint.latitude)}, ${"%.2f".format(geoPoint.longitude)})"
+
+                val success = favoritesViewModel.addFavoriteLocation(
+                    geoPoint.latitude,
+                    geoPoint.longitude,
+                    locationName
+                )
+
+                if (success) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Added to favorites: $locationName",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    findNavController().navigateUp()
+                } else {
+                    binding.btnSaveLocation.isEnabled = true
+                    binding.btnSaveLocation.text = "Save as Favorite"
+                    Toast.makeText(
+                        requireContext(),
+                        "Failed to add favorite",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                binding.btnSaveLocation.isEnabled = true
+                binding.btnSaveLocation.text = "Save as Favorite"
+                Toast.makeText(
+                    requireContext(),
+                    "Error: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }

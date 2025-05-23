@@ -1,0 +1,11 @@
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:insetLeft="1dp"
+    android:insetTop="1dp"
+    android:insetRight="1dp"
+    android:insetBottom="1dp">
+    <shape android:shape="rectangle">
+        <solid android:color="#00000000"/> <!-- Transparent -->
+        <corners android:radius="7dp"/> <!-- Slightly smaller than parent -->
+        <stroke android:width="0.5dp" android:color="#44FFFFFF"/> <!-- Inner glow -->
+    </shape>
+</inset>

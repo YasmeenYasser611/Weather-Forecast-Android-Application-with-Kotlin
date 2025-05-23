@@ -1,0 +1,85 @@
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
+    app:cardBackgroundColor="#80000000"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Temperature (Left side) -->
+        <TextView
+            android:id="@+id/tv_temperature"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:layout_alignParentStart="true"/>
+
+        <!-- High/Low (Below temperature) -->
+        <TextView
+            android:id="@+id/tv_high_low"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_temperature"
+            android:layout_alignStart="@id/tv_temperature"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:layout_marginTop="4dp"/>
+
+        <!-- Location (Below high/low) -->
+        <TextView
+            android:id="@+id/tv_location_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_high_low"
+            android:layout_alignStart="@id/tv_temperature"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
+
+        <!-- Weather Icon (Right side) -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/iv_weather_icon"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignTop="@id/tv_temperature"
+            android:contentDescription="Weather Icon"
+            app:lottie_autoPlay="true"
+            app:lottie_fileName="weather_animation.json"
+            app:lottie_loop="true" />
+
+        <!-- Weather Description (Below icon) -->
+        <TextView
+            android:id="@+id/tv_weather_description"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/iv_weather_icon"
+            android:layout_alignEnd="@id/iv_weather_icon"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:layout_marginTop="4dp"/>
+
+        <!-- Delete Button (Bottom right) -->
+        <ImageButton
+            android:id="@+id/btn_remove"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_alignParentEnd="true"
+            android:layout_below="@id/tv_weather_description"
+            android:layout_marginTop="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Remove favorite"
+            android:src="@drawable/ic_delete"/>
+    </RelativeLayout>
+</androidx.cardview.widget.CardView>

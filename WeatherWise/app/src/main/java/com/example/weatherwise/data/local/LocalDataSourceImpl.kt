@@ -17,9 +17,7 @@ class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource
         return weatherDao.getLocation(id)
     }
 
-    override suspend fun findLocationByCoordinates(lat: Double, lon: Double): LocationEntity? {
-        return weatherDao.findLocationByCoordinates(lat, lon)
-    }
+
 
     override suspend fun getCurrentLocation(): LocationEntity? {
         return weatherDao.getCurrentLocation()
@@ -93,5 +91,25 @@ class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource
 
     private suspend fun <T> saveWeatherEntity(entity: T, insert: suspend (T) -> Unit) {
         insert(entity)
+    }
+
+    override suspend fun findLocationByCoordinates(lat: Double, lon: Double): LocationEntity? {
+        return weatherDao.findNearbyLocation(lat, lon)
+    }
+
+    // Add this new function
+    override suspend fun getFavoriteLocationsWithWeather(): List<LocationWithWeather> {
+        return weatherDao.getFavoriteLocations().mapNotNull { location ->
+            weatherDao.getLocationWithWeather(location.id)?.let { dbData ->
+                LocationWithWeather(
+                    location = dbData.location,
+                    currentWeather = dbData.currentWeather?.weatherData,
+                    forecast = dbData.forecast?.forecastData
+                )
+            }
+        }
+    }
+    override suspend fun updateLocationAddress(locationId: String, address: String) {
+        weatherDao.updateLocationAddress(locationId, address)
     }
 }

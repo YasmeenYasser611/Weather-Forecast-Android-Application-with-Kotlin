@@ -1,26 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="?attr/colorPrimary"
-    android:gravity="center">
+    android:paddingTop="24dp"
+    android:paddingBottom="16dp"
+    android:gravity="center_horizontal">
 
-    <ImageView
-        android:layout_width="64dp"
-        android:layout_height="64dp"
-        android:src="@drawable/ic_weather_app_logo"
-        android:contentDescription="App Logo" />
-
-    <TextView
+    <!-- Full-width Lottie Animation (starry/weather-themed) -->
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/weatherAnimation"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Weather App"
-        android:textColor="@android:color/white"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginTop="8dp" />
+        android:layout_height="233dp"
+        android:contentDescription="Starry background animation"
+        android:scaleType="centerCrop"
+        app:lottie_autoPlay="true"
+        app:lottie_fileName="nav.json"
+        app:lottie_loop="true"
+        app:lottie_speed="0.8" />
 
 </LinearLayout>

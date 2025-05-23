@@ -1,4 +1,4 @@
-package com.example.weatherwise
+package com.example.weatherwise.features.main
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -6,7 +6,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.ui.NavigationUI
+import com.example.weatherwise.R
 import com.example.weatherwise.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -38,6 +38,11 @@ class MainActivity : AppCompatActivity() {
                 }
                 R.id.nav_settings -> {
                     navController.navigate(R.id.settingsFragment)
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    true
+                }
+                R.id.nav_fav-> {
+                    navController.navigate(R.id.favoritesFragment)
                     drawerLayout.closeDrawer(GravityCompat.START)
                     true
                 }

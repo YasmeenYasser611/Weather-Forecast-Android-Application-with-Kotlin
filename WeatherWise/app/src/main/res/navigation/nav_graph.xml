@@ -32,5 +32,33 @@
             app:popUpToInclusive="true" />
     </fragment>
 
+    <fragment
+        android:id="@+id/favoritesFragment"
+        android:name="com.example.weatherwise.features.fav.view.FavoritesFragment"
+        android:label="Favorites">
+        <action
+            android:id="@+id/action_favoritesFragment_to_mapFragment"
+            app:destination="@id/mapFragment" />
+        <action
+            android:id="@+id/action_favoritesFragment_to_homeFragment"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/favoritesFragment"
+            app:popUpToInclusive="false"
+            app:launchSingleTop="true"/>
+        <action
+            android:id="@+id/action_favoritesFragment_to_favoriteDetailFragment"
+            app:destination="@id/favoriteDetailFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/favoriteDetailFragment"
+        android:name="com.example.weatherwise.features.fav.view.FavItemFragment"
+        android:label="Favorite Details"
+        tools:layout="@layout/fragment_fav_item">
+
+        <argument
+            android:name="location_id"
+            app:argType="string" />
+    </fragment>
+
     <!-- Add other fragments as needed -->
 </navigation>

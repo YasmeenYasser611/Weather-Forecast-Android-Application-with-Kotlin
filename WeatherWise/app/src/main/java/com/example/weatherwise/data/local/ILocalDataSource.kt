@@ -26,4 +26,6 @@ interface ILocalDataSource {
     suspend fun deleteForecast(locationId: String)
     suspend fun deleteCurrentWeather(currentWeather: CurrentWeatherEntity)
     suspend fun deleteStaleWeather(threshold: Long)
+    suspend fun getFavoriteLocationsWithWeather(): List<LocationWithWeather>
+    suspend fun updateLocationAddress(locationId: String, address: String)
 }

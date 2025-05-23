@@ -9,17 +9,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.weatherwise.MainActivity
+import com.example.weatherwise.features.main.MainActivity
 import com.example.weatherwise.R
 import com.example.weatherwise.data.local.LocalDataSourceImpl
 import com.example.weatherwise.data.local.LocalDatabase
@@ -71,14 +72,16 @@ class HomeFragment : Fragment() {
         setupListeners()
         viewModel.getFreshLocation()
         setupSettingsObserver()
+
     }
 
     private fun initViews() {
         preferencesManager = PreferencesManager(requireContext())
     }
 
+    // In HomeFragment's setupViewModel()
     private fun setupViewModel() {
-      var vmFactory = HomeViewModelFactory(
+        val vmFactory = HomeViewModelFactory(
             repository = WeatherRepositoryImpl.getInstance(
                 WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
                 LocalDataSourceImpl(LocalDatabase.getInstance(requireContext()).weatherDao()),
@@ -87,7 +90,21 @@ class HomeFragment : Fragment() {
             locationHelper = LocationHelper(requireContext()),
             connectivityManager = requireContext().getSystemService(ConnectivityManager::class.java)
         )
+
         viewModel = ViewModelProvider(this, vmFactory)[HomeViewModel::class.java]
+
+        // Check if we're showing a temporary favorite location
+        arguments?.let { args ->
+            if (args.getBoolean("is_temporary", false)) {
+                args.getString("location_id")?.let { locationId ->
+                    viewModel.loadTemporaryLocation(locationId)
+                    return@setupViewModel
+                }
+            }
+        }
+
+        // Normal behavior if not showing a temporary location
+        viewModel.getFreshLocation()
     }
 
     private fun setupAdapters() {
@@ -127,6 +144,7 @@ class HomeFragment : Fragment() {
         viewModel.error.observe(viewLifecycleOwner) { error ->
             error?.let { Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show() }
         }
+
     }
 
     private fun setupListeners() {

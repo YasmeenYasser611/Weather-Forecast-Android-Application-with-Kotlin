@@ -21,4 +21,10 @@
     <string name="save_settings">Save Settings</string>
     <string name="notifications_settings">Notifications</string>
     <string name="enable_notifications">Enable Notifications</string>
+
+    <string name="favorites">Favorites</string>
+    <string name="no_favorites">You don\'t have any favorites yet</string>
+    <string name="add_first_favorite">Add Your First Favorite</string>
+    <string name="remove_favorite">Remove favorite</string>
+
 </resources>
