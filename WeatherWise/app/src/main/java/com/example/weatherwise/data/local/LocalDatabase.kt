@@ -9,11 +9,16 @@ import androidx.room.TypeConverters
 import com.example.weatherwise.data.model.entity.CurrentWeatherEntity
 import com.example.weatherwise.data.model.entity.ForecastWeatherEntity
 import com.example.weatherwise.data.model.entity.LocationEntity
+import com.example.weatherwise.data.model.entity.WeatherAlert
 
-@Database(entities = [LocationEntity::class, CurrentWeatherEntity::class, ForecastWeatherEntity::class], version = 1, exportSchema = false)
+
+@Database(
+    entities = [LocationEntity::class, CurrentWeatherEntity::class, ForecastWeatherEntity::class, WeatherAlert::class],
+    version = 2,
+    exportSchema = false
+)
 @TypeConverters(WeatherTypeConverters::class)
-abstract class LocalDatabase : RoomDatabase()
-{
+abstract class LocalDatabase : RoomDatabase() {
     abstract fun weatherDao(): WeatherDao
 
     companion object {
@@ -22,7 +27,11 @@ abstract class LocalDatabase : RoomDatabase()
 
         fun getInstance(context: Context): LocalDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(context.applicationContext, LocalDatabase::class.java, "weather_database")
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    LocalDatabase::class.java,
+                    "weather_database"
+                )
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

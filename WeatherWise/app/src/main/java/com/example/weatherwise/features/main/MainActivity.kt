@@ -46,7 +46,11 @@ class MainActivity : AppCompatActivity() {
                     drawerLayout.closeDrawer(GravityCompat.START)
                     true
                 }
-                // Add other menu items here
+                R.id.nav_alarms-> {
+                    navController.navigate(R.id.alertsFragment)
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    true
+                }
                 else -> false
             }
         }

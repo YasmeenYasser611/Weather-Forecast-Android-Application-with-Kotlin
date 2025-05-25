@@ -1,9 +1,11 @@
 package com.example.weatherwise.data.local
 
+import androidx.lifecycle.LiveData
 import com.example.weatherwise.data.model.entity.CurrentWeatherEntity
 import com.example.weatherwise.data.model.entity.ForecastWeatherEntity
 import com.example.weatherwise.data.model.entity.LocationEntity
 import com.example.weatherwise.data.model.domain.LocationWithWeather
+import com.example.weatherwise.data.model.entity.WeatherAlert
 import com.example.weatherwise.data.model.response.CurrentWeatherResponse
 import com.example.weatherwise.data.model.response.WeatherResponse
 
@@ -93,6 +95,7 @@ class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource
         insert(entity)
     }
 
+
     override suspend fun findLocationByCoordinates(lat: Double, lon: Double): LocationEntity? {
         return weatherDao.findNearbyLocation(lat, lon)
     }
@@ -112,4 +115,26 @@ class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource
     override suspend fun updateLocationAddress(locationId: String, address: String) {
         weatherDao.updateLocationAddress(locationId, address)
     }
+
+    override suspend fun saveAlert(alert: WeatherAlert) {
+        weatherDao.insertAlert(alert)
+    }
+
+    override suspend fun getAlert(alertId: String): WeatherAlert? {
+        return weatherDao.getAlertById(alertId)
+    }
+
+    override fun getAllAlerts(): LiveData<List<WeatherAlert>> {
+        return weatherDao.getAllAlerts()
+    }
+
+    override suspend fun updateAlert(alert: WeatherAlert) {
+        weatherDao.updateAlert(alert)
+    }
+
+    override suspend fun deleteAlert(alertId: String) {
+        weatherDao.deleteAlert(alertId)
+    }
+
+
 }

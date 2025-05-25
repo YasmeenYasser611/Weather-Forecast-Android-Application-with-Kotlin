@@ -21,10 +21,36 @@
     <string name="save_settings">Save Settings</string>
     <string name="notifications_settings">Notifications</string>
     <string name="enable_notifications">Enable Notifications</string>
-
     <string name="favorites">Favorites</string>
     <string name="no_favorites">You don\'t have any favorites yet</string>
     <string name="add_first_favorite">Add Your First Favorite</string>
     <string name="remove_favorite">Remove favorite</string>
+    <string name="weather_alerts">Weather Alerts</string>
+    <string name="weather_alerts_description">Set alerts to be notified about specific weather conditions in your area.</string>
+    <string name="active_alerts">Active Alerts</string>
+    <string name="no_active_alerts">No active weather alerts</string>
+    <string name="add_first_alert">Add Your First Alert</string>
+    <string name="turn_off">Turn Off</string>
+    <string name="turn_on">Turn On</string>
+    <string name="alert_type">Alert Type</string>
+    <string name="start_time">Start Time</string>
+    <string name="end_time">End Time</string>
+    <string name="notification_type">Notification Type</string>
+    <string name="silent_notification">Silent Notification</string>
+    <string name="sound_notification">Sound Notification</string>
+    <string name="alarm_sound">Alarm Sound</string>
+    <string name="custom_sound">Custom Sound</string>
+
+    <string-array name="weather_alert_types">
+        <item>Rain</item>
+        <item>Snow</item>
+        <item>Storm</item>
+        <item>Extreme Heat</item>
+        <item>High Winds</item>
+        <item>Fog</item>
+    </string-array>
+
+    <string name="notification_channel_name">Weather Notifications</string>
+    <string name="notification_channel_description">Notifications for weather updates</string>
 
 </resources>

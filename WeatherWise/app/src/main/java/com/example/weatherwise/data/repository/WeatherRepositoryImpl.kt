@@ -1,10 +1,12 @@
 package com.example.weatherwise.data.repository
 
 import android.util.Log
+import androidx.lifecycle.LiveData
 import com.example.weatherwise.data.local.ILocalDataSource
 import com.example.weatherwise.data.model.entity.LocationEntity
 import com.example.weatherwise.data.model.domain.LocationWithWeather
 import com.example.weatherwise.data.model.entity.LocationWithWeatherDB
+import com.example.weatherwise.data.model.entity.WeatherAlert
 import com.example.weatherwise.data.model.response.CurrentWeatherResponse
 import com.example.weatherwise.data.model.response.GeocodingResponse
 import com.example.weatherwise.data.model.response.WeatherResponse
@@ -247,4 +249,26 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
         val forecast = localDataSource.getForecast(locationId)
         return currentWeather == null || forecast == null || preferencesManager.hasTemperatureUnitChanged(getPreferredUnits())
     }
+
+
+    override suspend fun saveAlert(alert: WeatherAlert) {
+        localDataSource.saveAlert(alert)
+    }
+
+    override suspend fun getAlert(alertId: String): WeatherAlert? {
+        return localDataSource.getAlert(alertId)
+    }
+
+    override fun getAllAlerts(): LiveData<List<WeatherAlert>> {
+        return localDataSource.getAllAlerts()
+    }
+
+    override suspend fun updateAlert(alert: WeatherAlert) {
+        localDataSource.updateAlert(alert)
+    }
+
+    override suspend fun deleteAlert(alertId: String) {
+        localDataSource.deleteAlert(alertId)
+    }
+
 }

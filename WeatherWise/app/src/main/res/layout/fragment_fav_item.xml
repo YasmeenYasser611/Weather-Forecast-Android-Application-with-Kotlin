@@ -124,7 +124,7 @@
                     android:layout_height="150dp"
                     android:layout_marginTop="12dp"
                     android:contentDescription="Weather Animation"
-                    app:lottie_fileName="weather_animation.json"
+                    app:lottie_fileName="fav.json"
                     app:lottie_autoPlay="true"
                     app:lottie_loop="true"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -431,16 +431,7 @@
                     </LinearLayout>
                 </androidx.gridlayout.widget.GridLayout>
 
-                <!-- ProgressBar -->
-                <ProgressBar
-                    android:id="@+id/progressBar"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    android:visibility="gone" />
+
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.core.widget.NestedScrollView>

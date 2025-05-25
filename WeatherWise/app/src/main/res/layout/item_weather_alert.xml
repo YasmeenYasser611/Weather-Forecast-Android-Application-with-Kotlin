@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginBottom="8dp"
+    app:cardBackgroundColor="#40000000"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Alert title/type -->
+        <TextView
+            android:id="@+id/tv_alert_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/iv_active"
+            tools:text="Rain Alert" />
+
+        <!-- Active/inactive indicator -->
+        <ImageView
+            android:id="@+id/iv_active"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_notifications_active"
+            app:tint="@android:color/white"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Time range -->
+        <TextView
+            android:id="@+id/tv_time_range"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textColor="#CCFFFFFF"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_alert_title"
+            app:layout_constraintEnd_toStartOf="@id/btn_toggle"
+            tools:text="Active until 8:00 AM" />
+
+        <!-- Toggle button -->
+        <Button
+            android:id="@+id/btn_toggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/turn_off"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:textColor="@android:color/white"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/iv_active" />
+
+        <!-- Alert type icon and description -->
+        <ImageView
+            android:id="@+id/iv_alert_type"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/clearnight"
+            app:tint="@android:color/white"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_time_range" />
+
+        <TextView
+            android:id="@+id/tv_alert_description"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textColor="#CCFFFFFF"
+            android:textSize="14sp"
+            app:layout_constraintStart_toEndOf="@id/iv_alert_type"
+            app:layout_constraintTop_toTopOf="@id/iv_alert_type"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:text="Notify when rain is detected in your area" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.cardview.widget.CardView>

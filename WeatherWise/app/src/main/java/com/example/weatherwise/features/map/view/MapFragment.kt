@@ -76,7 +76,7 @@ class MapFragment : Fragment() {
         val settingsFactory = SettingsViewModelFactory(
             LocationHelper(requireContext()),
             repository,
-            PreferencesManager(requireContext())
+            PreferencesManager(requireContext()) , requireContext()
         )
         settingsViewModel = ViewModelProvider(requireActivity(), settingsFactory)[SettingsViewModel::class.java]
 

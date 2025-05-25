@@ -1,13 +1,18 @@
 package com.example.weatherwise.features.settings.view
 
 import WeatherService
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.weatherwise.R
 import com.example.weatherwise.data.local.LocalDataSourceImpl
@@ -21,12 +26,25 @@ import com.example.weatherwise.features.settings.viewmodel.SettingsViewModel
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModelFactory
 import com.example.weatherwise.location.LocationHelper
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.launch
 
 class SettingsFragment : Fragment() {
 
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
     private lateinit var viewModel: SettingsViewModel
+    private lateinit var notificationPermissionLauncher: ActivityResultLauncher<String>
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // Initialize the permission launcher
+        notificationPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            viewModel.onNotificationPermissionResult(isGranted)
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -47,7 +65,8 @@ class SettingsFragment : Fragment() {
                 LocalDataSourceImpl(LocalDatabase.getInstance(requireContext()).weatherDao()),
                 PreferencesManager(requireContext())
             ),
-            PreferencesManager(requireContext())
+            PreferencesManager(requireContext()),
+            requireContext()
         )
 
         // Create ViewModel using the factory
@@ -129,6 +148,21 @@ class SettingsFragment : Fragment() {
                 viewModel.resetNavigateToMap()
             }
         }
+        viewModel.notificationPermissionRequest.observe(viewLifecycleOwner) { shouldRequest ->
+            if (shouldRequest && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        viewModel.notificationsEnabled.observe(viewLifecycleOwner) { enabled ->
+            binding.switchNotifications.isChecked = enabled
+        }
+
+        viewModel.error.observe(viewLifecycleOwner) { error ->
+            error?.let {
+                Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun setupListeners() {
@@ -189,6 +223,12 @@ class SettingsFragment : Fragment() {
             viewModel.saveSettings()
             Toast.makeText(requireContext(), "Settings saved", Toast.LENGTH_SHORT).show()
             findNavController().navigateUp()
+        }
+        binding.switchNotifications.setOnCheckedChangeListener { _, isChecked ->
+            // Only proceed if this change came from user interaction
+            if (binding.switchNotifications.isPressed) {
+                viewModel.setNotificationsEnabled(isChecked, fromUser = true)
+            }
         }
     }
 

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Alert Type Selection -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/alert_type"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+        <AutoCompleteTextView
+            android:id="@+id/actv_alert_type"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:singleLine="true"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Start Time -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_start_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="@string/start_time">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_start_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:focusable="false"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- End Time -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_end_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="@string/end_time">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_end_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:focusable="false"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Notification Type -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/notification_type"
+        android:textColor="@android:color/white"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="8dp"/>
+
+    <RadioGroup
+        android:id="@+id/rg_notification_type"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/rb_silent_notification"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/silent_notification"/>
+
+        <RadioButton
+            android:id="@+id/rb_sound_notification"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/sound_notification"
+            android:layout_marginTop="8dp"/>
+
+        <RadioButton
+            android:id="@+id/rb_alarm_sound"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/alarm_sound"
+            android:layout_marginTop="8dp"/>
+    </RadioGroup>
+
+    <!-- Custom Sound Option (visible when sound is selected) -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_custom_sound"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="@string/custom_sound"
+        android:visibility="gone">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_custom_sound"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:focusable="false"/>
+    </com.google.android.material.textfield.TextInputLayout>
+</LinearLayout>

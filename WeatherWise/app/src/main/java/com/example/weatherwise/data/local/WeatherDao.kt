@@ -1,10 +1,12 @@
 package com.example.weatherwise.data.local
 
+import androidx.lifecycle.LiveData
 import androidx.room.*
 import com.example.weatherwise.data.model.entity.CurrentWeatherEntity
 import com.example.weatherwise.data.model.entity.ForecastWeatherEntity
 import com.example.weatherwise.data.model.entity.LocationEntity
 import com.example.weatherwise.data.model.entity.LocationWithWeatherDB
+import com.example.weatherwise.data.model.entity.WeatherAlert
 
 @Dao
 interface WeatherDao {
@@ -80,4 +82,19 @@ interface WeatherDao {
 
     @Query("UPDATE locations SET address = :address WHERE id = :locationId")
     suspend fun updateLocationAddress(locationId: String, address: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAlert(alert: WeatherAlert)
+
+    @Update
+    suspend fun updateAlert(alert: WeatherAlert)
+
+    @Query("SELECT * FROM weather_alerts")
+    fun getAllAlerts(): LiveData<List<WeatherAlert>>
+
+    @Query("SELECT * FROM weather_alerts WHERE id = :alertId")
+    suspend fun getAlertById(alertId: String): WeatherAlert?
+
+    @Query("DELETE FROM weather_alerts WHERE id = :alertId")
+    suspend fun deleteAlert(alertId: String)
 }

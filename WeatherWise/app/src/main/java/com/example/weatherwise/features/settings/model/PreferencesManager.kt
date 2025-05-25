@@ -61,13 +61,6 @@ class PreferencesManager(context: Context) {
     }
 
     // Notifications
-    fun setNotificationsEnabled(enabled: Boolean) {
-        sharedPreferences.edit { putBoolean(KEY_NOTIFICATIONS_ENABLED, enabled) }
-    }
-
-    fun areNotificationsEnabled(): Boolean {
-        return sharedPreferences.getBoolean(KEY_NOTIFICATIONS_ENABLED, true)
-    }
 
 
 
@@ -180,6 +173,13 @@ class PreferencesManager(context: Context) {
             LANGUAGE_ARABIC -> "ar"
             else -> "en"
         }
+    }
+    fun setNotificationsEnabled(enabled: Boolean) {
+        sharedPreferences.edit { putBoolean(KEY_NOTIFICATIONS_ENABLED, enabled) }
+    }
+
+    fun areNotificationsEnabled(): Boolean {
+        return sharedPreferences.getBoolean(KEY_NOTIFICATIONS_ENABLED, true)
     }
 
 }
