@@ -97,4 +97,7 @@ interface WeatherDao {
 
     @Query("DELETE FROM weather_alerts WHERE id = :alertId")
     suspend fun deleteAlert(alertId: String)
+
+    @Query("SELECT * FROM weather_alerts WHERE isActive = 1 AND :currentTime BETWEEN startTime AND endTime")
+    suspend fun getActiveAlerts(currentTime: Long): List<WeatherAlert>
 }

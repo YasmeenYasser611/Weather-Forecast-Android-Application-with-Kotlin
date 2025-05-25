@@ -12,6 +12,8 @@ import com.example.weatherwise.data.model.response.GeocodingResponse
 import com.example.weatherwise.data.model.response.WeatherResponse
 import com.example.weatherwise.data.remote.IWeatherRemoteDataSource
 import com.example.weatherwise.features.settings.model.PreferencesManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class WeatherRepositoryImpl private constructor(private val remoteDataSource: IWeatherRemoteDataSource, private val localDataSource: ILocalDataSource, private val preferencesManager: PreferencesManager) : IWeatherRepository
@@ -269,6 +271,12 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
 
     override suspend fun deleteAlert(alertId: String) {
         localDataSource.deleteAlert(alertId)
+    }
+
+    override suspend fun getActiveAlerts(currentTime: Long): List<WeatherAlert> {
+        return withContext(Dispatchers.IO) {
+            localDataSource.getActiveAlerts(currentTime)
+        }
     }
 
 }

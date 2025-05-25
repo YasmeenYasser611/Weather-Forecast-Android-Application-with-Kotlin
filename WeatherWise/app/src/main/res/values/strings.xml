@@ -41,16 +41,32 @@
     <string name="alarm_sound">Alarm Sound</string>
     <string name="custom_sound">Custom Sound</string>
 
-    <string-array name="weather_alert_types">
+    <string-array name="alert_types">
         <item>Rain</item>
-        <item>Snow</item>
         <item>Storm</item>
+        <item>Snow</item>
         <item>Extreme Heat</item>
-        <item>High Winds</item>
-        <item>Fog</item>
+        <item>Extreme Cold</item>
     </string-array>
+
+
 
     <string name="notification_channel_name">Weather Notifications</string>
     <string name="notification_channel_description">Notifications for weather updates</string>
+
+    <string name="add_weather_alert">Add Weather Alert</string>
+    <string name="add_weather_alert_description">Dialog to add a new weather alert</string>
+    <string name="alert_type_icon_description">Alert type selection icon</string>
+    <string name="alert_type_input_description">Select the type of weather alert</string>
+    <string name="start_time_icon_description">Start time picker icon</string>
+    <string name="start_time_input_description">Select the start time for the alert</string>
+    <string name="end_time_icon_description">End time picker icon</string>
+    <string name="end_time_input_description">Select the end time for the alert</string>
+    <string name="notification_type_description">Select the notification type</string>
+    <string name="silent_notification_description">Silent notification option</string>
+    <string name="sound_notification_description">Sound notification option</string>
+    <string name="alarm_sound_description">Alarm sound notification option</string>
+    <string name="select_sound_description">Select a custom sound</string>
+    <string name="custom_sound_input_description">Selected custom sound for the alert</string>
 
 </resources>

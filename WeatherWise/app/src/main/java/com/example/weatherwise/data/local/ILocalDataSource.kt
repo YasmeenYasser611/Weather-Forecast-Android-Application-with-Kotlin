@@ -36,4 +36,5 @@ interface ILocalDataSource {
     fun getAllAlerts(): LiveData<List<WeatherAlert>>
     suspend fun updateAlert(alert: WeatherAlert)
     suspend fun deleteAlert(alertId: String)
+    suspend fun getActiveAlerts(currentTime: Long): List<WeatherAlert>
 }
