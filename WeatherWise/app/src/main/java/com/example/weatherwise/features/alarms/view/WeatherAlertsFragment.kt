@@ -2,9 +2,11 @@ package com.example.weatherwise.features.alarms.view
 
 import WeatherService
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.AlarmManager
 import android.app.AlertDialog
 import android.app.DatePickerDialog
+import android.app.PendingIntent
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
@@ -12,12 +14,11 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -33,9 +34,9 @@ import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.DialogAddAlertBinding
 import com.example.weatherwise.databinding.FragmentAlarmsBinding
-
 import com.example.weatherwise.features.alarms.viewmodel.WeatherAlertViewModel
 import com.example.weatherwise.features.alarms.viewmodel.WeatherAlertViewModelFactory
+import com.example.weatherwise.features.alarms.worker.AlarmReceiver
 import com.example.weatherwise.features.alarms.worker.AlertWorker
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import com.google.android.material.snackbar.Snackbar
@@ -87,12 +88,17 @@ class WeatherAlertsFragment : Fragment() {
         adapter = WeatherAlertsAdapter(
             onToggle = { alert ->
                 viewModel.updateAlert(alert.copy(isActive = !alert.isActive))
+                if (!alert.isActive && alert.notificationType == "ALARM") {
+                    cancelAlarm(alert.id)
+                }
             },
             onDelete = { alert ->
+                if (alert.notificationType == "ALARM") {
+                    cancelAlarm(alert.id)
+                }
                 showDeleteConfirmation(alert)
             }
         )
-
         binding.rvActiveAlerts.adapter = adapter
         binding.rvActiveAlerts.layoutManager = LinearLayoutManager(requireContext())
 
@@ -128,6 +134,18 @@ class WeatherAlertsFragment : Fragment() {
             error?.let {
                 Snackbar.make(binding.snackbarAnchor, it, Snackbar.LENGTH_LONG).show()
                 viewModel.clearErrorMessage()
+            }
+        }
+
+        viewModel.alertsUpdated.observe(viewLifecycleOwner) { updated ->
+            if (updated) {
+                // Reschedule alarms if needed
+                viewModel.alerts.value?.forEach { alert ->
+                    if (alert.notificationType == "ALARM" && alert.isActive) {
+                        scheduleAlarmIfNeeded(alert)
+                    }
+                }
+                viewModel.clearAlertsUpdated()
             }
         }
     }
@@ -288,50 +306,6 @@ class WeatherAlertsFragment : Fragment() {
         ).show()
     }
 
-    private fun saveAlert(dialogBinding: DialogAddAlertBinding) {
-        val alertType = dialogBinding.actvAlertType.text.toString()
-        val startTimeText = dialogBinding.etStartTime.text.toString()
-        val endTimeText = dialogBinding.etEndTime.text.toString()
-        val notificationType = when (dialogBinding.rgNotificationType.checkedRadioButtonId) {
-            R.id.rb_silent_notification -> "SILENT"
-            R.id.rb_sound_notification -> "SOUND"
-            R.id.rb_alarm_sound -> "ALARM"
-            else -> "SILENT"
-        }
-        val customSoundUri = dialogBinding.etCustomSound.text?.toString()
-
-        // Validate inputs
-        if (alertType.isBlank() || startTimeText.isBlank() || endTimeText.isBlank()) {
-            Snackbar.make(binding.snackbarAnchor, "Please fill all fields", Snackbar.LENGTH_LONG).show()
-            return
-        }
-
-        try {
-            val startTime = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
-                .parse(startTimeText)?.time ?: 0
-            val endTime = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
-                .parse(endTimeText)?.time ?: 0
-
-            if (startTime >= endTime) {
-                Snackbar.make(binding.snackbarAnchor, "End time must be after start time", Snackbar.LENGTH_LONG).show()
-                return
-            }
-
-            val newAlert = WeatherAlert(
-                type = alertType,
-                startTime = startTime,
-                endTime = endTime,
-                notificationType = notificationType,
-                customSoundUri = customSoundUri,
-                isActive = true
-            )
-
-            viewModel.addAlert(newAlert)
-        } catch (e: Exception) {
-            Snackbar.make(binding.snackbarAnchor, "Invalid date format", Snackbar.LENGTH_LONG).show()
-        }
-    }
-
     private fun showEnableNotificationsDialog() {
         AlertDialog.Builder(requireContext())
             .setTitle("Notifications Disabled")
@@ -363,5 +337,110 @@ class WeatherAlertsFragment : Fragment() {
     companion object {
         private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1001
         fun newInstance() = WeatherAlertsFragment()
+    }
+
+    private fun saveAlert(dialogBinding: DialogAddAlertBinding) {
+        val alertType = dialogBinding.actvAlertType.text.toString()
+        val startTimeText = dialogBinding.etStartTime.text.toString()
+        val endTimeText = dialogBinding.etEndTime.text.toString()
+        val notificationType = when (dialogBinding.rgNotificationType.checkedRadioButtonId) {
+            R.id.rb_silent_notification -> "SILENT"
+            R.id.rb_sound_notification -> "SOUND"
+            R.id.rb_alarm_sound -> "ALARM"
+            else -> "SILENT"
+        }
+        val customSoundUri = dialogBinding.etCustomSound.text?.toString()
+
+        // Validate inputs
+        if (alertType.isBlank() || startTimeText.isBlank() || endTimeText.isBlank()) {
+            Snackbar.make(binding.snackbarAnchor, "Please fill all fields", Snackbar.LENGTH_LONG).show()
+            return
+        }
+
+        try {
+            val startTime = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
+                .parse(startTimeText)?.time ?: 0
+            val endTime = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
+                .parse(endTimeText)?.time ?: 0
+
+            if (startTime >= endTime) {
+                Snackbar.make(binding.snackbarAnchor, "End time must be after start time", Snackbar.LENGTH_LONG).show()
+                return
+            }
+
+            val newAlert = WeatherAlert(
+                id = generateAlertId(alertType, startTime),
+                type = alertType,
+                startTime = startTime,
+                endTime = endTime,
+                notificationType = notificationType,
+                customSoundUri = customSoundUri,
+                isActive = true
+            )
+
+            viewModel.addAlert(newAlert)
+
+            // If it's an alarm type, schedule it immediately
+            if (notificationType == "ALARM") {
+                scheduleAlarmIfNeeded(newAlert)
+            }
+
+        } catch (e: Exception) {
+            Snackbar.make(binding.snackbarAnchor, "Invalid date format", Snackbar.LENGTH_LONG).show()
+        }
+    }
+
+    private fun generateAlertId(alertType: String, startTime: Long): String {
+        return "${alertType}_${startTime}"
+    }
+
+
+    @SuppressLint("ScheduleExactAlarm")
+    private fun scheduleAlarmIfNeeded(alert: WeatherAlert) {
+        if (alert.notificationType == "ALARM" && alert.isActive) {
+            val alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val intent = Intent(requireContext(), AlarmReceiver::class.java).apply {
+                putExtra("alert_id", alert.id)
+                putExtra("alert_type", alert.type)
+                putExtra("end_time", alert.endTime)
+                putExtra("notification_type", alert.notificationType)
+            }
+
+            Log.d("WeatherAlertsFragment", "Scheduling alarm for alert: ${alert.id}, notification_type: ${alert.notificationType}")
+
+            val pendingIntent = PendingIntent.getBroadcast(
+                requireContext(),
+                alert.id.hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    alert.startTime,
+                    pendingIntent
+                )
+            } else {
+                alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    alert.startTime,
+                    pendingIntent
+                )
+            }
+            Log.d("WeatherAlertsFragment", "Scheduled alarm for alert: ${alert.id}")
+        }
+    }
+
+    private fun cancelAlarm(alertId: String) {
+        val alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(requireContext(), AlarmReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            requireContext(),
+            alertId.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
     }
 }

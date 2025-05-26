@@ -2,6 +2,7 @@ package com.example.weatherwise.features.alarms.worker
 
 import WeatherService
 import android.Manifest
+import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -12,17 +13,12 @@ import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.work.Constraints
-import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.WorkerParameters
+import androidx.work.*
 import com.example.weatherwise.R
 import com.example.weatherwise.data.local.LocalDataSourceImpl
 import com.example.weatherwise.data.local.LocalDatabase
@@ -51,18 +47,16 @@ class AlertWorker(
                 .build()
 
             val periodicWorkRequest = PeriodicWorkRequestBuilder<AlertWorker>(
-                15, TimeUnit.MINUTES // Check every 15 minutes
+                15, TimeUnit.MINUTES
             ).setConstraints(constraints)
                 .addTag(WORK_TAG)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_TAG,
-                ExistingPeriodicWorkPolicy.REPLACE, // Use REPLACE to ensure new worker is scheduled
+                ExistingPeriodicWorkPolicy.REPLACE,
                 periodicWorkRequest
-            ).also {
-                Log.d("AlertWorker", "Periodic work enqueued with ID: ${periodicWorkRequest.id}")
-            }
+            )
         }
     }
 
@@ -75,25 +69,20 @@ class AlertWorker(
     }
 
     override suspend fun doWork(): Result {
-        Log.d("AlertWorker", "Worker started at ${System.currentTimeMillis()}")
         try {
             val currentTime = System.currentTimeMillis()
             val alerts = repo.getActiveAlerts(currentTime)
-            Log.d("AlertWorker", "Retrieved ${alerts.size} active alerts for time: $currentTime")
 
-            if (alerts.isEmpty()) {
-                Log.d("AlertWorker", "No active alerts found")
-            } else {
-                alerts.forEach { alert ->
-                    Log.d("AlertWorker", "Processing alert: ${alert.id}, Type: ${alert.type}, " +
-                            "Start: ${alert.startTime}, End: ${alert.endTime}, Active: ${alert.isActive}")
-                    showNotification(alert)
+            alerts.forEach { alert ->
+                when (alert.notificationType.uppercase()) {
+                    "ALARM" -> scheduleExactAlarm(applicationContext, alert)
+                    "NOTIFICATION" -> showNotification(alert)
                 }
             }
             return Result.success()
         } catch (e: Exception) {
             Log.e("AlertWorker", "Error in doWork: ${e.message}", e)
-            return Result.retry() // Retry on failure to handle transient issues
+            return Result.retry()
         }
     }
 
@@ -123,16 +112,11 @@ class AlertWorker(
 
         // Determine channel ID and name based on notification type
         val channelId = when (alert.notificationType.uppercase()) {
-            "ALARM" -> "weather_alerts_alarm"
             "SOUND" -> "weather_alerts_sound"
-            else -> {
-                Log.w("AlertWorker", "Unknown notification type: ${alert.notificationType}, defaulting to silent")
-                "weather_alerts_silent"
-            }
+            else -> "weather_alerts_silent"
         }
 
         val channelName = when (alert.notificationType.uppercase()) {
-            "ALARM" -> "Weather Alarm Alerts"
             "SOUND" -> "Weather Sound Alerts"
             else -> "Weather Silent Alerts"
         }
@@ -140,20 +124,16 @@ class AlertWorker(
         // Create notification channel for Android O and above
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = when (alert.notificationType.uppercase()) {
-                "ALARM" -> NotificationManager.IMPORTANCE_HIGH
                 "SOUND" -> NotificationManager.IMPORTANCE_DEFAULT
                 else -> NotificationManager.IMPORTANCE_LOW
             }
 
             val channel = NotificationChannel(channelId, channelName, importance).apply {
                 description = "Channel for ${alert.type} alerts"
-                if (alert.notificationType.uppercase() != "SILENT") {
+                if (alert.notificationType.uppercase() == "SOUND") {
                     val soundUri = try {
                         alert.customSoundUri?.let { Uri.parse(it) } ?: RingtoneManager.getDefaultUri(
-                            if (alert.notificationType.uppercase() == "ALARM")
-                                RingtoneManager.TYPE_ALARM
-                            else
-                                RingtoneManager.TYPE_NOTIFICATION
+                            RingtoneManager.TYPE_NOTIFICATION
                         )
                     } catch (e: Exception) {
                         Log.e("AlertWorker", "Invalid custom sound URI: ${alert.customSoundUri}, using default")
@@ -173,10 +153,11 @@ class AlertWorker(
         val notification = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(R.drawable.ic_notifications_active)
             .setContentTitle("Weather Alert: ${alert.type}")
-            .setContentText("Active until ${SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(alert.endTime))}")
+            .setContentText("Active until ${SimpleDateFormat("h:mm a", Locale.getDefault()).format(
+                Date(alert.endTime)
+            )}")
             .setPriority(
                 when (alert.notificationType.uppercase()) {
-                    "ALARM" -> NotificationCompat.PRIORITY_MAX
                     "SOUND" -> NotificationCompat.PRIORITY_DEFAULT
                     else -> NotificationCompat.PRIORITY_LOW
                 }
@@ -194,5 +175,47 @@ class AlertWorker(
         NotificationManagerCompat.from(applicationContext)
             .notify(alert.id.hashCode(), notification)
         Log.d("AlertWorker", "Notification posted for alert: ${alert.id}")
+    }
+    private fun scheduleExactAlarm(context: Context, alert: WeatherAlert) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            putExtra("alert_id", alert.id)
+            putExtra("alert_type", alert.type)
+            putExtra("end_time", alert.endTime)
+            putExtra("notification_type", alert.notificationType)
+        }
+
+        Log.d("AlertWorker", "Scheduling alarm for alert: ${alert.id}, notification_type: ${alert.notificationType}")
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            alert.id.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            !alarmManager.canScheduleExactAlarms()) {
+            Log.w("AlertWorker", "Cannot schedule exact alarms, requesting permission")
+            val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                alert.startTime,
+                pendingIntent
+            )
+        } else {
+            alarmManager.setExact(
+                AlarmManager.RTC_WAKEUP,
+                alert.startTime,
+                pendingIntent
+            )
+        }
+        Log.d("AlertWorker", "Scheduled exact alarm for alert: ${alert.id}")
     }
 }

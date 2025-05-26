@@ -50,7 +50,6 @@
     </string-array>
 
 
-
     <string name="notification_channel_name">Weather Notifications</string>
     <string name="notification_channel_description">Notifications for weather updates</string>
 

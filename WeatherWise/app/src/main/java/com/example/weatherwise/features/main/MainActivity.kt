@@ -8,6 +8,7 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.example.weatherwise.R
 import com.example.weatherwise.databinding.ActivityMainBinding
+
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
@@ -24,12 +25,9 @@ class MainActivity : AppCompatActivity() {
 
         drawerLayout = binding.drawerLayout
 
-        // Set up navigation with custom listener
         binding.navView.setNavigationItemSelectedListener { menuItem ->
-            // Handle navigation manually
             when (menuItem.itemId) {
                 R.id.nav_home -> {
-                    // If not already on home, navigate there
                     if (navController.currentDestination?.id != R.id.homeFragment) {
                         navController.navigate(R.id.homeFragment)
                     }
@@ -41,12 +39,12 @@ class MainActivity : AppCompatActivity() {
                     drawerLayout.closeDrawer(GravityCompat.START)
                     true
                 }
-                R.id.nav_fav-> {
+                R.id.nav_fav -> {
                     navController.navigate(R.id.favoritesFragment)
                     drawerLayout.closeDrawer(GravityCompat.START)
                     true
                 }
-                R.id.nav_alarms-> {
+                R.id.nav_alarms -> {
                     navController.navigate(R.id.alertsFragment)
                     drawerLayout.closeDrawer(GravityCompat.START)
                     true
