@@ -11,6 +11,7 @@ import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.weatherwise.R
 class AlarmService : Service() {
@@ -62,9 +63,18 @@ class AlarmService : Service() {
         startForeground(1, notification)
 
         // Play alarm sound
-        mediaPlayer = MediaPlayer.create(this, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)).apply {
-            isLooping = true
-            start()
+        try {
+            mediaPlayer = MediaPlayer.create(this, R.raw.alarm).apply {
+                isLooping = true
+                start()
+            }
+        } catch (e: Exception) {
+            Log.e("AlarmService", "Error playing custom alarm sound", e)
+            // Fallback to default alarm sound if custom sound fails
+            mediaPlayer = MediaPlayer.create(this, android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI).apply {
+                isLooping = true
+                start()
+            }
         }
 
         return START_STICKY
