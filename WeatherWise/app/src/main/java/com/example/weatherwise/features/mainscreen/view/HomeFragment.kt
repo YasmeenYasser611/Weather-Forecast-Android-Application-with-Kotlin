@@ -113,8 +113,14 @@ class HomeFragment : Fragment() {
 
         binding.rvHourlyForecast.apply {
             layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+                .apply {
+                    // Add this to prevent initial measurement issues
+                    initialPrefetchItemCount = 24 // or your expected item count
+                }
             adapter = hourlyAdapter
             setHasFixedSize(true)
+            // Add this to prevent clipping
+            setItemViewCacheSize(24) // or your expected item count
         }
 
         binding.rvWeeklyForecast.apply {
@@ -128,7 +134,12 @@ class HomeFragment : Fragment() {
         viewModel.weatherData.observe(viewLifecycleOwner) { weatherData ->
             weatherData?.let {
                 updateWeatherUI(it)
-                hourlyAdapter.submitList(it.hourlyForecast ?: emptyList())
+//                hourlyAdapter.submitList(it.hourlyForecast ?: emptyList())
+                hourlyAdapter.submitList(it.hourlyForecast ?: emptyList()) {
+                    binding.rvHourlyForecast.post {
+                        binding.rvHourlyForecast.requestLayout()
+                    }
+                }
                 dailyAdapter.submitList(it.dailyForecast ?: emptyList())
             }
         }
