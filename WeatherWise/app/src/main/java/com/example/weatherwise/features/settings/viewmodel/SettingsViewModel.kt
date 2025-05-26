@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LiveData
@@ -62,6 +63,11 @@ class SettingsViewModel(
     private val _notificationPermissionRequest = MutableLiveData<Boolean>()
     val notificationPermissionRequest: LiveData<Boolean> = _notificationPermissionRequest
 
+    private val _requestOverlayPermission = MutableLiveData<Boolean>()
+    val requestOverlayPermission: LiveData<Boolean> = _requestOverlayPermission
+
+
+
     init {
         // Load initial settings from SharedPreferences
         _locationMethod.value = preferencesManager.getLocationMethod()
@@ -87,6 +93,28 @@ class SettingsViewModel(
         _notificationsEnabled.value = enabled
     }
 
+//    fun setNotificationsEnabled(enabled: Boolean, fromUser: Boolean = false) {
+//        if (enabled) {
+//            if (hasNotificationPermission()) {
+//                if (hasOverlayPermission()) {
+//                    // Both permissions granted, enable notifications
+//                    _notificationsEnabled.value = true
+//                    preferencesManager.setNotificationsEnabled(true)
+//                    createNotificationChannel()
+//                } else if (fromUser) {
+//                    // Request overlay permission
+//                    _requestOverlayPermission.value = true
+//                }
+//            } else if (fromUser) {
+//                // Request notification permission first
+//                _notificationPermissionRequest.value = true
+//            }
+//        } else {
+//            // Disable notifications
+//            _notificationsEnabled.value = false
+//            preferencesManager.setNotificationsEnabled(false)
+//        }
+//    }
     fun selectManualLocation() {
         _navigateToMap.value = true
     }
@@ -265,23 +293,7 @@ class SettingsViewModel(
         }
         _requestNotificationPermission.value = false
     }
-    fun setNotificationsEnabled(enabled: Boolean, fromUser: Boolean = false) {
-        if (enabled) {
-            if (hasNotificationPermission()) {
-                // Permission already granted, enable notifications
-                _notificationsEnabled.value = true
-                preferencesManager.setNotificationsEnabled(true)
-                createNotificationChannel()
-            } else if (fromUser) {
-                // Request permission only when user explicitly enables
-                _notificationPermissionRequest.value = true
-            }
-        } else {
-            // Disable notifications
-            _notificationsEnabled.value = false
-            preferencesManager.setNotificationsEnabled(false)
-        }
-    }
+
 
     private fun hasNotificationPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -294,6 +306,7 @@ class SettingsViewModel(
             true
         }
     }
+
 
     fun onNotificationPermissionResult(granted: Boolean) {
         if (granted) {
@@ -309,7 +322,69 @@ class SettingsViewModel(
     }
 
 
+
+    private fun hasOverlayPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(context)
+        } else {
+            true
+        }
+    }
+
+    // Modify the setNotificationsEnabled function
+    fun setNotificationsEnabled(enabled: Boolean, fromUser: Boolean = false) {
+        if (enabled) {
+            if (hasNotificationPermission()) {
+                if (hasOverlayPermission()) {
+                    // Both permissions granted, enable notifications
+                    _notificationsEnabled.value = true
+                    preferencesManager.setNotificationsEnabled(true)
+                    createNotificationChannel()
+                } else if (fromUser) {
+                    // Request overlay permission only when user enables notifications
+                    _requestOverlayPermission.value = true
+                    // Don't enable notifications yet - wait for permission
+                    _notificationsEnabled.value = false
+                    preferencesManager.setNotificationsEnabled(false)
+                }
+            } else if (fromUser) {
+                // Request notification permission first
+                _notificationPermissionRequest.value = true
+                // Don't enable notifications yet - wait for permission
+                _notificationsEnabled.value = false
+                preferencesManager.setNotificationsEnabled(false)
+            }
+        } else {
+            // Disable notifications but don't touch overlay permission
+            _notificationsEnabled.value = false
+            preferencesManager.setNotificationsEnabled(false)
+        }
+    }
+
+
+
+    // Add this function to handle overlay permission result
+    fun onOverlayPermissionResult(granted: Boolean) {
+        if (granted) {
+            // Now check if we have notification permission too
+            if (hasNotificationPermission()) {
+                _notificationsEnabled.value = true
+                preferencesManager.setNotificationsEnabled(true)
+                createNotificationChannel()
+            } else {
+                // Request notification permission
+                _notificationPermissionRequest.value = true
+            }
+        } else {
+            _error.postValue("Alarms may not work properly without display over other apps permission")
+        }
+        _requestOverlayPermission.value = false
+    }
+
+
     companion object {
         const val CHANNEL_ID = "weather_notifications_channel"
+        const val OVERLAY_PERMISSION_REQUEST_CODE = 1002
     }
+
 }

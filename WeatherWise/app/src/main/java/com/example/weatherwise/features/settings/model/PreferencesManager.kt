@@ -179,7 +179,7 @@ class PreferencesManager(context: Context) {
     }
 
     fun areNotificationsEnabled(): Boolean {
-        return sharedPreferences.getBoolean(KEY_NOTIFICATIONS_ENABLED, true)
+        return sharedPreferences.getBoolean(KEY_NOTIFICATIONS_ENABLED, false)
     }
 
 }

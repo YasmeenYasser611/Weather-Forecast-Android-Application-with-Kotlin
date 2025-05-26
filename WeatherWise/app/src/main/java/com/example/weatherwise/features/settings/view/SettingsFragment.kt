@@ -2,8 +2,11 @@ package com.example.weatherwise.features.settings.view
 
 import WeatherService
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -35,14 +38,24 @@ class SettingsFragment : Fragment() {
     private lateinit var viewModel: SettingsViewModel
     private lateinit var notificationPermissionLauncher: ActivityResultLauncher<String>
 
+    private lateinit var overlayPermissionLauncher: ActivityResultLauncher<Intent>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize the permission launcher
+        // Initialize the permission launchers
         notificationPermissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted ->
             viewModel.onNotificationPermissionResult(isGranted)
+        }
+
+        overlayPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                viewModel.onOverlayPermissionResult(Settings.canDrawOverlays(requireContext()))
+            }
         }
     }
 
@@ -78,6 +91,19 @@ class SettingsFragment : Fragment() {
     }
 
     private fun setupObservers() {
+
+        viewModel.requestOverlayPermission.observe(viewLifecycleOwner) { shouldRequest ->
+            if (shouldRequest && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:${requireContext().packageName}")
+                )
+                overlayPermissionLauncher.launch(intent)
+            }
+        }
+
+
+
         viewModel.locationMethod.observe(viewLifecycleOwner) { method ->
             binding.rgLocationMethod.check(
                 when (method) {
