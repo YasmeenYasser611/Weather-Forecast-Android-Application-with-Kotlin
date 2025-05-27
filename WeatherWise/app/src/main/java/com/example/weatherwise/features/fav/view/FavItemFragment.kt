@@ -15,20 +15,19 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.weatherwise.R
 import com.example.weatherwise.data.local.LocalDataSourceImpl
 import com.example.weatherwise.data.local.LocalDatabase
-import com.example.weatherwise.data.model.domain.LocationWithWeather
 import com.example.weatherwise.data.model.domain.WeatherData
 import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentFavItemBinding
-import com.example.weatherwise.features.mainscreen.view.DailyForecastAdapter
-import com.example.weatherwise.features.mainscreen.view.HourlyForecastAdapter
+import com.example.weatherwise.features.mainscreen.view.dailyforecat.DailyForecastAdapter
+import com.example.weatherwise.features.mainscreen.view.hourlyforecast.HourlyForecastAdapter
 
 import com.example.weatherwise.features.mainscreen.viewmodel.HomeViewModel
 import com.example.weatherwise.features.mainscreen.viewmodel.HomeViewModelFactory
-import com.example.weatherwise.features.mainscreen.viewmodel.WeatherIconMapper
+import com.example.weatherwise.utils.WeatherIconMapper
 import com.example.weatherwise.features.settings.model.PreferencesManager
-import com.example.weatherwise.location.LocationHelper
+import com.example.weatherwise.utils.LocationHelper
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

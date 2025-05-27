@@ -1,4 +1,4 @@
-package com.example.weatherwise.features.mainscreen.view
+package com.example.weatherwise.features.mainscreen.view.hourlyforecast
 
 import androidx.recyclerview.widget.DiffUtil
 import com.example.weatherwise.data.model.domain.HourlyForecast

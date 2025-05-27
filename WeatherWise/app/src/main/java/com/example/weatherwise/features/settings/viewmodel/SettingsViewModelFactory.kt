@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.weatherwise.data.repository.IWeatherRepository
 import com.example.weatherwise.features.settings.model.PreferencesManager
-import com.example.weatherwise.location.LocationHelper
+import com.example.weatherwise.utils.LocationHelper
 
 class SettingsViewModelFactory(
     private val locationHelper: LocationHelper,

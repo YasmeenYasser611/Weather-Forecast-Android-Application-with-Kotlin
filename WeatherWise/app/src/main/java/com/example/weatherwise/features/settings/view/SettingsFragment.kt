@@ -15,7 +15,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.weatherwise.R
 import com.example.weatherwise.data.local.LocalDataSourceImpl
@@ -27,9 +26,8 @@ import com.example.weatherwise.databinding.FragmentSettingsBinding
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModel
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModelFactory
-import com.example.weatherwise.location.LocationHelper
+import com.example.weatherwise.utils.LocationHelper
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.launch
 
 class SettingsFragment : Fragment() {
 

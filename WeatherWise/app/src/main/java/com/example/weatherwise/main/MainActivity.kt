@@ -1,4 +1,4 @@
-package com.example.weatherwise.features.main
+package com.example.weatherwise.main
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity

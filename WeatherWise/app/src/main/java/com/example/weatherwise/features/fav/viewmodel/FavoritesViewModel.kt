@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weatherwise.data.model.domain.LocationWithWeather
 import com.example.weatherwise.data.repository.IWeatherRepository
-import com.example.weatherwise.location.LocationHelper
+import com.example.weatherwise.utils.LocationHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

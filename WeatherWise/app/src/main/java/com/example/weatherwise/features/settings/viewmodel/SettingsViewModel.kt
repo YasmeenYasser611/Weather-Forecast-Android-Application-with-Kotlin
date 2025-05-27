@@ -16,7 +16,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.weatherwise.R
 import com.example.weatherwise.data.repository.IWeatherRepository
 import com.example.weatherwise.features.settings.model.PreferencesManager
-import com.example.weatherwise.location.LocationHelper
+import com.example.weatherwise.utils.LocationHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

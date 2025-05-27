@@ -16,7 +16,6 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -30,9 +29,7 @@ import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.features.fav.viewmodel.FavoritesViewModel
 import com.example.weatherwise.features.fav.viewmodel.FavoritesViewModelFactory
 import com.example.weatherwise.features.settings.model.PreferencesManager
-import com.example.weatherwise.features.settings.viewmodel.SettingsViewModel
-import com.example.weatherwise.features.settings.viewmodel.SettingsViewModelFactory
-import com.example.weatherwise.location.LocationHelper
+import com.example.weatherwise.utils.LocationHelper
 import com.google.android.material.snackbar.Snackbar
 
 class FavoritesFragment : Fragment() {

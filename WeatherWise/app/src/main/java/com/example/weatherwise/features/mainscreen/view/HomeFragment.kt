@@ -9,7 +9,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
@@ -18,9 +17,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.weatherwise.features.main.MainActivity
+import com.example.weatherwise.main.MainActivity
 import com.example.weatherwise.R
 import com.example.weatherwise.data.local.LocalDataSourceImpl
 import com.example.weatherwise.data.local.LocalDatabase
@@ -29,13 +27,18 @@ import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentWeatherBinding
-import com.example.weatherwise.location.LocationHelper
+import com.example.weatherwise.features.mainscreen.view.dailyforecat.DailyForecastAdapter
+import com.example.weatherwise.features.mainscreen.view.hourlyforecast.HourlyForecastAdapter
+import com.example.weatherwise.utils.LocationHelper
 import com.example.weatherwise.features.mainscreen.viewmodel.*
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModel
+import com.example.weatherwise.utils.WeatherIconMapper
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+
+
 
 class HomeFragment : Fragment() {
 
@@ -70,16 +73,14 @@ class HomeFragment : Fragment() {
         setupAdapters()
         setupObservers()
         setupListeners()
-        viewModel.getFreshLocation()
+        checkLocationAvailability()
         setupSettingsObserver()
-
     }
 
     private fun initViews() {
         preferencesManager = PreferencesManager(requireContext())
     }
 
-    // In HomeFragment's setupViewModel()
     private fun setupViewModel() {
         val vmFactory = HomeViewModelFactory(
             repository = WeatherRepositoryImpl.getInstance(
@@ -93,18 +94,13 @@ class HomeFragment : Fragment() {
 
         viewModel = ViewModelProvider(this, vmFactory)[HomeViewModel::class.java]
 
-        // Check if we're showing a temporary favorite location
         arguments?.let { args ->
             if (args.getBoolean("is_temporary", false)) {
                 args.getString("location_id")?.let { locationId ->
                     viewModel.loadTemporaryLocation(locationId)
-                    return@setupViewModel
                 }
             }
         }
-
-        // Normal behavior if not showing a temporary location
-        viewModel.getFreshLocation()
     }
 
     private fun setupAdapters() {
@@ -113,14 +109,10 @@ class HomeFragment : Fragment() {
 
         binding.rvHourlyForecast.apply {
             layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-                .apply {
-                    // Add this to prevent initial measurement issues
-                    initialPrefetchItemCount = 24 // or your expected item count
-                }
+                .apply { initialPrefetchItemCount = 24 }
             adapter = hourlyAdapter
             setHasFixedSize(true)
-            // Add this to prevent clipping
-            setItemViewCacheSize(24) // or your expected item count
+            setItemViewCacheSize(24)
         }
 
         binding.rvWeeklyForecast.apply {
@@ -134,11 +126,8 @@ class HomeFragment : Fragment() {
         viewModel.weatherData.observe(viewLifecycleOwner) { weatherData ->
             weatherData?.let {
                 updateWeatherUI(it)
-//                hourlyAdapter.submitList(it.hourlyForecast ?: emptyList())
                 hourlyAdapter.submitList(it.hourlyForecast ?: emptyList()) {
-                    binding.rvHourlyForecast.post {
-                        binding.rvHourlyForecast.requestLayout()
-                    }
+                    binding.rvHourlyForecast.post { binding.rvHourlyForecast.requestLayout() }
                 }
                 dailyAdapter.submitList(it.dailyForecast ?: emptyList())
             }
@@ -153,9 +142,8 @@ class HomeFragment : Fragment() {
         }
 
         viewModel.error.observe(viewLifecycleOwner) { error ->
-            error?.let { Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show() }
+            error?.let { showToast(it) }
         }
-
     }
 
     private fun setupListeners() {
@@ -180,25 +168,21 @@ class HomeFragment : Fragment() {
     private fun updateWeatherUI(weatherData: WeatherData) {
         weatherData.currentWeather?.let { current ->
             binding.tvTemperature.text = "${current.main.temp.toInt()}°"
-
             val description = current.weather.firstOrNull()?.description?.capitalizeFirst() ?: "N/A"
             binding.tvWeatherDescription.text =
                 "$description  H:${current.main.temp_max.toInt()}° L:${current.main.temp_min.toInt()}°"
-
             current.weather.firstOrNull()?.icon?.let { iconCode ->
                 binding.weatherAnimation.apply {
                     setAnimation(WeatherIconMapper.getLottieAnimationForIcon(iconCode))
                     playAnimation()
                 }
             }
-
             binding.tvPressure.text = "${current.main.pressure} hPa"
             binding.tvHumidity.text = "${current.main.humidity}%"
             binding.tvWindSpeed.text = formatWindSpeed(current.wind.speed)
             binding.tvCloudCover.text = "${current.clouds.all}%"
             binding.tvVisibility.text = "${current.visibility} m"
             binding.tvUvIndex.text = "N/A"
-
             current.dt?.let { timestamp ->
                 binding.tvDateTime.text = SimpleDateFormat("MMM d, yyyy  hh:mm a", Locale.getDefault())
                     .format(Date(timestamp * 1000))

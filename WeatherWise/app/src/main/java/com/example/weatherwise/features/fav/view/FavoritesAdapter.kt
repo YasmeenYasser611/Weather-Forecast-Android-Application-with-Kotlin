@@ -5,10 +5,9 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.weatherwise.R
 import com.example.weatherwise.data.model.domain.LocationWithWeather
 import com.example.weatherwise.databinding.ItemFavoriteBinding
-import com.example.weatherwise.features.mainscreen.viewmodel.WeatherIconMapper
+import com.example.weatherwise.utils.WeatherIconMapper
 
 class FavoritesAdapter(
     private val showUndoDeleteSnackbar: (LocationWithWeather, Int) -> Unit,

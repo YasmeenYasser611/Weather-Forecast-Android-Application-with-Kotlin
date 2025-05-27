@@ -1,4 +1,4 @@
-package com.example.weatherwise.features.mainscreen.view
+package com.example.weatherwise.features.mainscreen.view.hourlyforecast
 
 
 import android.annotation.SuppressLint
@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.weatherwise.data.model.domain.HourlyForecast
 import com.example.weatherwise.databinding.ItemHourlyForecastBinding
-import com.example.weatherwise.features.mainscreen.viewmodel.WeatherIconMapper
+import com.example.weatherwise.utils.WeatherIconMapper
 
 class HourlyForecastAdapter :
     ListAdapter<HourlyForecast, HourlyForecastAdapter.HourlyForecastViewHolder>(
