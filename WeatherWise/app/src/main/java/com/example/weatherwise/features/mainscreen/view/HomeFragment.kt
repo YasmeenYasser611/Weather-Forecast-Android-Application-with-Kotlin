@@ -90,6 +90,7 @@ class HomeFragment : Fragment() {
             ),
             locationHelper = LocationHelper(requireContext()),
             connectivityManager = requireContext().getSystemService(ConnectivityManager::class.java)
+            ,  PreferencesManager(requireContext())
         )
 
         viewModel = ViewModelProvider(this, vmFactory)[HomeViewModel::class.java]

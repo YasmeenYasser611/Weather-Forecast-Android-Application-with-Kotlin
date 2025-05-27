@@ -29,6 +29,7 @@ class WeatherDataProcessor {
                 )
             }
             .orEmpty()
+
     }
 
     fun processDailyForecast(forecast: WeatherResponse?): List<DailyForecast> {

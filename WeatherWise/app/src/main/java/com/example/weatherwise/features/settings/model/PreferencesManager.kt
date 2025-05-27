@@ -27,6 +27,16 @@ class PreferencesManager(context: Context) {
         const val LANGUAGE_ARABIC = "arabic"
     }
 
+
+    private var lastKnownSettings: Map<String, Any> = getAllSettings()
+
+    fun haveSettingsChanged(): Boolean {
+        val currentSettings = getAllSettings()
+        val changed = currentSettings != lastKnownSettings
+        lastKnownSettings = currentSettings
+        return changed
+    }
+
     // Location Method
     fun setLocationMethod(method: String) {
         sharedPreferences.edit { putString(KEY_LOCATION_METHOD, method) }

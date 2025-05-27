@@ -9,6 +9,7 @@ import com.example.weatherwise.features.settings.model.PreferencesManager
 import com.example.weatherwise.utils.LocationHelper
 import com.example.weatherwise.utils.LocationHelperDelegate
 import com.example.weatherwise.utils.NetworkStatusChecker
+import com.example.weatherwise.utils.UnitConverter
 import com.example.weatherwise.utils.WeatherDataProcessor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -17,7 +18,8 @@ import kotlinx.coroutines.withContext
 class HomeViewModel(
     private val repository: IWeatherRepository,
     private val locationHelper: LocationHelper,
-    connectivityManager: ConnectivityManager
+    connectivityManager: ConnectivityManager,
+    private val preferencesManager: PreferencesManager,
 ) : ViewModel() {
 
     // LiveData declarations
@@ -72,6 +74,59 @@ class HomeViewModel(
                 } ?: throw IllegalStateException("Location not found")
             }
         }
+    }
+
+    private fun applyOfflineSettingsChanges(weatherData: WeatherData): WeatherData {
+        val currentSettings = preferencesManager.getAllSettings()
+        val targetTempUnit = currentSettings["temperature_unit"] as? String ?: PreferencesManager.TEMP_CELSIUS
+        val targetWindUnit = currentSettings["wind_speed_unit"] as? String ?: PreferencesManager.WIND_METERS_PER_SEC
+
+        // Skip conversion if cached units match target units
+        if (weatherData.temperatureUnit == targetTempUnit && weatherData.windSpeedUnit == targetWindUnit) {
+            return weatherData
+        }
+
+        // Convert current weather
+        val currentWeather = weatherData.currentWeather?.copy()?.apply {
+            main.temp = UnitConverter.convertTemperature(main.temp, weatherData.temperatureUnit, targetTempUnit)
+            main.temp_min = UnitConverter.convertTemperature(main.temp_min, weatherData.temperatureUnit, targetTempUnit)
+            main.temp_max = UnitConverter.convertTemperature(main.temp_max, weatherData.temperatureUnit, targetTempUnit)
+            wind.speed = UnitConverter.convertWindSpeed(wind.speed, weatherData.windSpeedUnit, targetWindUnit)
+        }
+
+        // Convert forecast
+        val forecast = weatherData.forecast?.copy()?.apply {
+            list.forEach { forecastItem ->
+                forecastItem.main.temp = UnitConverter.convertTemperature(forecastItem.main.temp, weatherData.temperatureUnit, targetTempUnit)
+                forecastItem.main.temp_min = UnitConverter.convertTemperature(forecastItem.main.temp_min, weatherData.temperatureUnit, targetTempUnit)
+                forecastItem.main.temp_max = UnitConverter.convertTemperature(forecastItem.main.temp_max, weatherData.temperatureUnit, targetTempUnit)
+                forecastItem.wind.speed = UnitConverter.convertWindSpeed(forecastItem.wind.speed, weatherData.windSpeedUnit, targetWindUnit)
+            }
+        }
+
+        // Convert hourly forecast
+        val hourlyForecast = weatherData.hourlyForecast?.map { hourly ->
+            hourly.copy(
+                temperature = UnitConverter.convertTemperature(hourly.temperature, weatherData.temperatureUnit, targetTempUnit)
+            )
+        }
+
+        // Convert daily forecast
+        val dailyForecast = weatherData.dailyForecast?.map { daily ->
+            daily.copy(
+                highTemperature = UnitConverter.convertTemperature(daily.highTemperature, weatherData.temperatureUnit, targetTempUnit),
+                lowTemperature = UnitConverter.convertTemperature(daily.lowTemperature, weatherData.temperatureUnit, targetTempUnit)
+            )
+        }
+
+        return WeatherData(
+            currentWeather = currentWeather,
+            forecast = forecast,
+            hourlyForecast = hourlyForecast,
+            dailyForecast = dailyForecast,
+            temperatureUnit = targetTempUnit, // Update to reflect new units
+            windSpeedUnit = targetWindUnit // Update to reflect new units
+        )
     }
 
     fun refreshCurrentWeather() {
@@ -147,23 +202,25 @@ class HomeViewModel(
 
     private fun postWeatherAndLocation(lat: Double, lon: Double, data: LocationWithWeather) {
         val currentTime = System.currentTimeMillis() / 1000L
-        val hourlyForecast = weatherDataProcessor.processHourlyForecast(data.forecast, currentTime)
-        val dailyForecast = weatherDataProcessor.processDailyForecast(data.forecast)
-
-        _weatherData.value = WeatherData(
+        var weatherData = WeatherData(
             currentWeather = data.currentWeather,
             forecast = data.forecast,
-            hourlyForecast = hourlyForecast,
-            dailyForecast = dailyForecast
+            hourlyForecast = weatherDataProcessor.processHourlyForecast(data.forecast, currentTime),
+            dailyForecast = weatherDataProcessor.processDailyForecast(data.forecast)
         )
 
+        // Apply offline settings changes if needed
+        if (!networkStatusChecker.isNetworkAvailable()) {
+            weatherData = applyOfflineSettingsChanges(weatherData)
+        }
+
+        _weatherData.value = weatherData
         _locationData.value = LocationData(
             lat,
             lon,
             determineBestAddress(data.location.name)
         )
     }
-
     private fun determineBestAddress(locationName: String?): String {
         return when {
             !_locationData.value?.address.isNullOrEmpty() -> _locationData.value!!.address

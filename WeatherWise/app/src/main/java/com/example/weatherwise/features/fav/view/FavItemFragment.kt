@@ -77,7 +77,7 @@ class FavItemFragment : Fragment()
                     preferencesManager
                 ),
                 locationHelper = LocationHelper(requireContext()),
-                connectivityManager = requireContext().getSystemService(ConnectivityManager::class.java)
+                connectivityManager = requireContext().getSystemService(ConnectivityManager::class.java), PreferencesManager(requireContext())
             )
             viewModel = ViewModelProvider(this, factory).get(HomeViewModel::class.java)
         }
