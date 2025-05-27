@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -24,13 +26,18 @@ import com.example.weatherwise.features.settings.viewmodel.SettingsViewModel
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModelFactory
 import com.example.weatherwise.utils.LocationHelper
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
+import java.net.URL
+import javax.net.ssl.HttpsURLConnection
 
 class MapFragment : Fragment() {
 
@@ -39,10 +46,11 @@ class MapFragment : Fragment() {
     private lateinit var favoritesViewModel: FavoritesViewModel
     private lateinit var settingsViewModel: SettingsViewModel
     private var selectedMarker: Marker? = null
+    private var searchResults = mutableListOf<String>()
+    private lateinit var searchAdapter: ArrayAdapter<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Initialize osmdroid configuration
         Configuration.getInstance().load(
             requireContext(),
             requireContext().getSharedPreferences("osmdroid", Context.MODE_PRIVATE)
@@ -68,19 +76,127 @@ class MapFragment : Fragment() {
         )
 
         // Initialize FavoritesViewModel
-        val favoritesFactory = FavoritesViewModelFactory(repository , LocationHelper(requireContext()) )
+        val favoritesFactory = FavoritesViewModelFactory(repository, LocationHelper(requireContext()))
         favoritesViewModel = ViewModelProvider(this, favoritesFactory)[FavoritesViewModel::class.java]
 
         // Initialize SettingsViewModel if needed
         val settingsFactory = SettingsViewModelFactory(
             LocationHelper(requireContext()),
             repository,
-            PreferencesManager(requireContext()) , requireContext()
+            PreferencesManager(requireContext()),
+            requireContext()
         )
         settingsViewModel = ViewModelProvider(requireActivity(), settingsFactory)[SettingsViewModel::class.java]
 
+        setupSearch()
         setupMap()
         setupListeners()
+    }
+
+    private fun setupSearch() {
+        searchAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, searchResults)
+        binding.searchInput.setAdapter(searchAdapter)
+
+        // Handle text changes for autocomplete
+        binding.searchInput.setOnItemClickListener { _, _, position, _ ->
+            val selectedItem = searchResults[position]
+            geocodeLocation(selectedItem)
+            binding.searchInput.setText(selectedItem)
+        }
+
+        // Handle search action
+        binding.searchInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                val query = binding.searchInput.text.toString()
+                if (query.isNotEmpty()) {
+                    searchLocation(query)
+                    true
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        }
+    }
+
+    private fun searchLocation(query: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val results = withContext(Dispatchers.IO) {
+                    searchLocationNominatim(query)
+                }
+
+                searchResults.clear()
+                searchResults.addAll(results)
+                searchAdapter.notifyDataSetChanged()
+
+                if (results.isNotEmpty()) {
+                    // Select first result by default
+                    val firstResult = results.first()
+                    geocodeLocation(firstResult)
+                }
+            } catch (e: Exception) {
+                Snackbar.make(binding.root, "Search failed: ${e.message}", Snackbar.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private suspend fun searchLocationNominatim(query: String): List<String> {
+        val url = URL("https://nominatim.openstreetmap.org/search?format=json&q=$query")
+        val connection = url.openConnection() as HttpsURLConnection
+        connection.requestMethod = "GET"
+        connection.setRequestProperty("User-Agent", "WeatherWiseApp")
+
+        return try {
+            val response = connection.inputStream.bufferedReader().use { it.readText() }
+            val jsonArray = JSONObject("{\"results\":$response}").getJSONArray("results")
+
+            val results = mutableListOf<String>()
+            for (i in 0 until jsonArray.length()) {
+                val item = jsonArray.getJSONObject(i)
+                val displayName = item.getString("display_name")
+                results.add(displayName)
+            }
+            results
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private fun geocodeLocation(locationName: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val url = URL("https://nominatim.openstreetmap.org/search?format=json&q=${locationName}&limit=1")
+                    val connection = url.openConnection() as HttpsURLConnection
+                    connection.requestMethod = "GET"
+                    connection.setRequestProperty("User-Agent", "WeatherWiseApp")
+
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    val jsonArray = JSONObject("{\"results\":$response}").getJSONArray("results")
+
+                    if (jsonArray.length() > 0) {
+                        val firstResult = jsonArray.getJSONObject(0)
+                        val lat = firstResult.getString("lat").toDouble()
+                        val lon = firstResult.getString("lon").toDouble()
+                        GeoPoint(lat, lon)
+                    } else {
+                        null
+                    }
+                }
+
+                result?.let { geoPoint ->
+                    updateSelectedLocation(geoPoint)
+                    binding.mapView.controller.animateTo(geoPoint)
+                    binding.mapView.controller.setZoom(15.0)
+                } ?: run {
+                    Snackbar.make(binding.root, "Location not found", Snackbar.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Snackbar.make(binding.root, "Geocoding failed: ${e.message}", Snackbar.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun setupMap() {
