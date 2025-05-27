@@ -1,7 +1,5 @@
 package com.example.weatherwise.features.map.view
 
-
-
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,10 +8,12 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.weatherwise.R
+import com.example.weatherwise.features.map.model.SearchResult
+
 
 class LocationListAdapter(
-    private val onLocationClick: (String) -> Unit
-) : ListAdapter<String, LocationListAdapter.LocationViewHolder>(LocationDiffCallback()) {
+    private val onLocationClick: (SearchResult) -> Unit
+) : ListAdapter<SearchResult, LocationListAdapter.LocationViewHolder>(LocationDiffCallback()) {
 
     class LocationViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val locationText: TextView = itemView.findViewById(R.id.location_text)
@@ -26,17 +26,17 @@ class LocationListAdapter(
     }
 
     override fun onBindViewHolder(holder: LocationViewHolder, position: Int) {
-        val location = getItem(position) ?: return
-        holder.locationText.text = location
+        val location = getItem(position)
+        holder.locationText.text = location.displayName
         holder.itemView.setOnClickListener { onLocationClick(location) }
     }
 
-    class LocationDiffCallback : DiffUtil.ItemCallback<String>() {
-        override fun areItemsTheSame(oldItem: String, newItem: String): Boolean {
-            return oldItem == newItem
+    class LocationDiffCallback : DiffUtil.ItemCallback<SearchResult>() {
+        override fun areItemsTheSame(oldItem: SearchResult, newItem: SearchResult): Boolean {
+            return oldItem.displayName == newItem.displayName
         }
 
-        override fun areContentsTheSame(oldItem: String, newItem: String): Boolean {
+        override fun areContentsTheSame(oldItem: SearchResult, newItem: SearchResult): Boolean {
             return oldItem == newItem
         }
     }

@@ -5,16 +5,14 @@ import android.content.Context
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
-import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.weatherwise.data.local.LocalDataSourceImpl
@@ -26,24 +24,23 @@ import com.example.weatherwise.databinding.FragmentMapBinding
 import com.example.weatherwise.features.fav.viewmodel.FavoritesViewModel
 import com.example.weatherwise.features.fav.viewmodel.FavoritesViewModelFactory
 import com.example.weatherwise.features.map.view.LocationListAdapter
+import com.example.weatherwise.features.map.model.MapRepositoryImpl
+import com.example.weatherwise.features.map.model.MapState
+import com.example.weatherwise.features.map.viewmodel.MapViewModel
+import com.example.weatherwise.features.map.viewmodel.MapViewModelFactory
 import com.example.weatherwise.features.settings.model.PreferencesManager
+
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModel
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModelFactory
 import com.example.weatherwise.utils.LocationHelper
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
-import java.net.URL
-import java.net.URLEncoder
-import javax.net.ssl.HttpsURLConnection
 
 class MapFragment : Fragment() {
 
@@ -53,8 +50,28 @@ class MapFragment : Fragment() {
     private lateinit var settingsViewModel: SettingsViewModel
     private var selectedMarker: Marker? = null
     private lateinit var locationAdapter: LocationListAdapter
-    private var lastSearchTime = 0L
-    private val searchDelay = 500L
+
+    private val viewModel: MapViewModel by viewModels {
+        val repository = WeatherRepositoryImpl.getInstance(
+            WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
+            LocalDataSourceImpl(LocalDatabase.getInstance(requireContext()).weatherDao()),
+            PreferencesManager(requireContext())
+        )
+
+        val favoritesFactory = FavoritesViewModelFactory(repository, LocationHelper(requireContext()))
+        favoritesViewModel = ViewModelProvider(this, favoritesFactory)[FavoritesViewModel::class.java]
+
+        val settingsFactory = SettingsViewModelFactory(
+            LocationHelper(requireContext()),
+            repository,
+            PreferencesManager(requireContext()),
+            requireContext()
+        )
+        settingsViewModel = ViewModelProvider(requireActivity(), settingsFactory)[SettingsViewModel::class.java]
+
+        val mapRepository = MapRepositoryImpl(Dispatchers.IO, favoritesViewModel, settingsViewModel)
+        MapViewModelFactory(mapRepository)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,44 +92,23 @@ class MapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Initialize ViewModels
-        val repository = WeatherRepositoryImpl.getInstance(
-            WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
-            LocalDataSourceImpl(LocalDatabase.getInstance(requireContext()).weatherDao()),
-            PreferencesManager(requireContext())
-        )
-
-        val favoritesFactory = FavoritesViewModelFactory(repository, LocationHelper(requireContext()))
-        favoritesViewModel = ViewModelProvider(this, favoritesFactory)[FavoritesViewModel::class.java]
-
-        val settingsFactory = SettingsViewModelFactory(
-            LocationHelper(requireContext()),
-            repository,
-            PreferencesManager(requireContext()),
-            requireContext()
-        )
-        settingsViewModel = ViewModelProvider(requireActivity(), settingsFactory)[SettingsViewModel::class.java]
-
-        setupSearch()
-        setupRecyclerView()
-        setupMap()
-        setupListeners()
-
         binding.btnSaveLocation.text = if (arguments?.getBoolean("for_favorite") == true) {
             "Save as Favorite"
         } else {
             "Save Location"
         }
+
+        setupSearch()
+        setupRecyclerView()
+        setupMap()
+        setupListeners()
+        observeViewModel()
     }
 
     private fun setupSearch() {
-        // Handle clear button click
         binding.searchContainer.setEndIconOnClickListener {
             binding.searchInput.text?.clear()
-            locationAdapter.submitList(emptyList())
             binding.resultsRecyclerView.visibility = View.GONE
-            binding.statusText.text = "Enter a location to search"
-            binding.progressBar.visibility = View.GONE
         }
 
         binding.searchInput.addTextChangedListener(object : TextWatcher {
@@ -121,16 +117,9 @@ class MapFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {
                 val query = s.toString().trim()
                 if (query.length >= 3) {
-                    val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastSearchTime >= searchDelay) {
-                        lastSearchTime = currentTime
-                        searchLocation(query)
-                    }
+                    viewModel.searchLocation(query)
                 } else {
-                    locationAdapter.submitList(emptyList())
                     binding.resultsRecyclerView.visibility = View.GONE
-                    binding.statusText.text = "Enter at least 3 characters to search"
-                    binding.progressBar.visibility = View.GONE
                 }
             }
         })
@@ -139,10 +128,9 @@ class MapFragment : Fragment() {
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                 val query = binding.searchInput.text.toString().trim()
                 if (query.isNotEmpty()) {
-                    searchLocation(query)
+                    viewModel.searchLocation(query)
                     true
                 } else {
-                    binding.statusText.text = "Please enter a location"
                     Snackbar.make(binding.root, "Please enter a location", Snackbar.LENGTH_SHORT).show()
                     false
                 }
@@ -154,125 +142,14 @@ class MapFragment : Fragment() {
 
     private fun setupRecyclerView() {
         locationAdapter = LocationListAdapter { location ->
-            geocodeLocation(location)
-            binding.searchInput.setText(location)
+            viewModel.geocodeLocation(location.displayName)
+            binding.searchInput.setText(location.displayName)
             binding.resultsRecyclerView.visibility = View.GONE
         }
         binding.resultsRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = locationAdapter
             visibility = View.GONE
-        }
-    }
-
-    private fun searchLocation(query: String) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                binding.progressBar.visibility = View.VISIBLE
-                binding.statusText.text = "Searching for \"$query\"..."
-                val results = withContext(Dispatchers.IO) {
-                    searchLocationNominatim(query)
-                }
-
-                locationAdapter.submitList(results)
-                if (results.isEmpty()) {
-                    binding.resultsRecyclerView.visibility = View.GONE
-                    binding.statusText.text = "No results found for \"$query\""
-                    Snackbar.make(binding.root, "No results found", Snackbar.LENGTH_SHORT).show()
-                } else {
-                    binding.resultsRecyclerView.visibility = View.VISIBLE
-                    binding.statusText.text = "Found ${results.size} location(s)"
-                }
-            } catch (e: Exception) {
-                Log.e("MapFragment", "Search failed: ${e.message}", e)
-                binding.statusText.text = "Search failed: ${e.message}"
-                binding.resultsRecyclerView.visibility = View.GONE
-                Snackbar.make(binding.root, "Search failed: ${e.message}", Snackbar.LENGTH_SHORT).show()
-            } finally {
-                binding.progressBar.visibility = View.GONE
-            }
-        }
-    }
-
-    private suspend fun searchLocationNominatim(query: String): List<String> {
-        val encodedQuery = URLEncoder.encode(query, "UTF-8")
-        val url = URL("https://nominatim.openstreetmap.org/search?format=json&q=$encodedQuery&limit=10")
-        val connection = url.openConnection() as HttpsURLConnection
-        connection.requestMethod = "GET"
-        connection.setRequestProperty("User-Agent", "WeatherWiseApp/1.0")
-
-        return try {
-            val responseCode = connection.responseCode
-            if (responseCode != HttpsURLConnection.HTTP_OK) {
-                Log.e("MapFragment", "Nominatim API error: HTTP $responseCode")
-                return emptyList()
-            }
-            val response = connection.inputStream.bufferedReader().use { it.readText() }
-            val jsonArray = JSONArray(response)
-            val results = mutableListOf<String>()
-            for (i in 0 until jsonArray.length()) {
-                val item = jsonArray.getJSONObject(i)
-                val displayName = item.optString("display_name", "")
-                if (displayName.isNotEmpty()) {
-                    results.add(displayName)
-                }
-            }
-            results
-        } catch (e: Exception) {
-            Log.e("MapFragment", "Nominatim API parse error: ${e.message}")
-            emptyList()
-        } finally {
-            connection.disconnect()
-        }
-    }
-
-    private fun geocodeLocation(locationName: String) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                binding.progressBar.visibility = View.VISIBLE
-                binding.statusText.text = "Locating \"$locationName\"..."
-                val result = withContext(Dispatchers.IO) {
-                    val encodedLocation = URLEncoder.encode(locationName, "UTF-8")
-                    val url = URL("https://nominatim.openstreetmap.org/search?format=json&q=$encodedLocation&limit=1")
-                    val connection = url.openConnection() as HttpsURLConnection
-                    connection.requestMethod = "GET"
-                    connection.setRequestProperty("User-Agent", "WeatherWiseApp/1.0")
-
-                    val responseCode = connection.responseCode
-                    if (responseCode != HttpsURLConnection.HTTP_OK) {
-                        Log.e("MapFragment", "Geocoding API error: HTTP $responseCode")
-                        return@withContext null
-                    }
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    val jsonArray = JSONArray(response)
-
-                    if (jsonArray.length() > 0) {
-                        val firstResult = jsonArray.getJSONObject(0)
-                        val lat = firstResult.optString("lat").toDoubleOrNull() ?: null
-                        val lon = firstResult.optString("lon").toDoubleOrNull()
-                        if (lat != null && lon != null) GeoPoint(lat, lon) else null
-                    } else {
-                        null
-                    }
-                }
-
-                if (result != null) {
-                    updateSelectedLocation(result)
-                    binding.mapView.controller.animateTo(result)
-                    binding.mapView.controller.setZoom(15.0)
-                    binding.statusText.text = "Location set: $locationName"
-                    Snackbar.make(binding.root, "Location set: $locationName", Snackbar.LENGTH_SHORT).show()
-                } else {
-                    binding.statusText.text = "Location not found: $locationName"
-                    Snackbar.make(binding.root, "Location not found", Snackbar.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Log.e("MapFragment", "Geocoded failed: ${e.message}", e)
-                binding.statusText.text = "Geocoded failed: ${e.message}"
-                Snackbar.make(binding.root, "Geocoded failed: ${e.message}", Snackbar.LENGTH_SHORT).show()
-            } finally {
-                binding.progressBar.visibility = View.GONE
-            }
         }
     }
 
@@ -287,57 +164,24 @@ class MapFragment : Fragment() {
 
             val mapEventsOverlay = MapEventsOverlay(object: MapEventsReceiver {
                 override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
-                    if (p != null) {
-                        updateSelectedLocation(p)
-                        binding.statusText.text = "Map location selected"
-                        binding.resultsRecyclerView.visibility = View.GONE
-                        Snackbar.make(binding.root, "Map Location selected", Snackbar.LENGTH_SHORT).show()
-                        return true
-                    }
-                    return false
+                    p?.let { viewModel.onMapClick(it) }
+                    return true
                 }
 
-                override fun longPressHelper(p: GeoPoint?): Boolean {
-                    return false
-                }
+                override fun longPressHelper(p: GeoPoint?): Boolean = false
             })
             binding.mapView.overlays.add(mapEventsOverlay)
         } catch (e: Exception) {
-            Log.e("MapFragment", "Map setup failed: ${e.message}", e)
-            binding.statusText.text = "Map setup failed"
             Snackbar.make(binding.root, "Failed to initialize map", Snackbar.LENGTH_LONG).show()
         }
     }
 
     private fun setupListeners() {
         binding.btnSaveLocation.setOnClickListener {
-            val marker = selectedMarker
-            if (marker == null) {
-                binding.statusText.text = "No location selected"
-                Toast.makeText(requireContext(), "Please select a location", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            if (arguments?.getBoolean("for_favorite") == true) {
-                saveAsFavorite(marker.position)
-            } else {
-                binding.btnSaveLocation.isEnabled = false
-                binding.btnSaveLocation.text = "Saving..."
-                settingsViewModel.setManualLocationCoordinates(marker.position.latitude, marker.position.longitude)
-
-
-                settingsViewModel.saveComplete.observe(viewLifecycleOwner) { success ->
-                    if (success) {
-                        binding.statusText.text = "Location saved"
-                        Snackbar.make(binding.root, "Location saved successfully", Snackbar.LENGTH_SHORT).show()
-                        findNavController().navigateUp()
-                    } else {
-                        binding.btnSaveLocation.isEnabled = true
-                        binding.btnSaveLocation.text = "Save Location"
-                        binding.statusText.text = "Failed to save location"
-                        Snackbar.make(binding.root, "Failed to save location", Snackbar.LENGTH_SHORT).show()
-                    }
-                }
+            selectedMarker?.position?.let { geoPoint ->
+                viewModel.saveLocation(geoPoint, arguments?.getBoolean("for_favorite") == true)
+            } ?: run {
+                Snackbar.make(binding.root, "Please select a location", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -346,62 +190,58 @@ class MapFragment : Fragment() {
         }
     }
 
-    private fun saveAsFavorite(geoPoint: GeoPoint) {
-        binding.btnSaveLocation.isEnabled = false
-        binding.btnSaveLocation.text = "Saving..."
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val address = favoritesViewModel.getAddressForCoordinates(geoPoint.latitude, geoPoint.longitude)
-                val locationName = address ?: "Location (${"%.2f".format(geoPoint.latitude)}, ${"%.2f".format(geoPoint.longitude)})"
-
-                val success = favoritesViewModel.addFavoriteLocation(
-                    geoPoint.latitude,
-                    geoPoint.longitude,
-                    locationName
-                )
-
-                if (success) {
-                    binding.statusText.text = "Added to favorites: $locationName"
-                    Snackbar.make(binding.root, "Added to favorites: $locationName", Snackbar.LENGTH_SHORT).show()
-                    findNavController().navigateUp()
-                } else {
-                    binding.btnSaveLocation.isEnabled = true
-                    binding.btnSaveLocation.text = "Save as Favorite"
-                    binding.statusText.text = "Failed to add favorite"
-                    Snackbar.make(binding.root, "Failed to add favorite", Snackbar.LENGTH_SHORT).show()
+    private fun observeViewModel() {
+        viewModel.mapState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is MapState.Loading -> {
+                    binding.progressBar.visibility = View.VISIBLE
+                    binding.statusText.text = state.message
                 }
-            } catch (e: Exception) {
-                Log.e("MapFragment", "Save favorite failed: ${e.message}", e)
-                binding.btnSaveLocation.isEnabled = true
-                binding.btnSaveLocation.text = "Save as Favorite"
-                binding.statusText.text = "Error saving favorite"
-                Snackbar.make(binding.root, "Error: ${e.message}", Snackbar.LENGTH_SHORT).show()
+                is MapState.Success -> {
+                    binding.progressBar.visibility = View.GONE
+                    binding.statusText.text = state.message
+                    Snackbar.make(binding.root, state.message, Snackbar.LENGTH_SHORT).show()
+                }
+                is MapState.Error -> {
+                    binding.progressBar.visibility = View.GONE
+                    binding.statusText.text = state.message
+                    Snackbar.make(binding.root, state.message, Snackbar.LENGTH_SHORT).show()
+                }
+                is MapState.LocationSelected -> {
+                    binding.progressBar.visibility = View.GONE
+                    binding.statusText.text = state.message
+                    updateSelectedLocation(state.geoPoint)
+                    binding.mapView.controller.animateTo(state.geoPoint)
+                    binding.mapView.controller.setZoom(15.0)
+                    Snackbar.make(binding.root, state.message, Snackbar.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        viewModel.searchResults.observe(viewLifecycleOwner) { results ->
+            locationAdapter.submitList(results)
+            binding.resultsRecyclerView.visibility = if (results.isNotEmpty()) View.VISIBLE else View.GONE
+        }
+
+        viewModel.saveComplete.observe(viewLifecycleOwner) { success ->
+            if (success) {
+                findNavController().navigateUp()
             }
         }
     }
 
-    private fun updateSelectedLocation(geoPoint: GeoPoint?) {
-        if (geoPoint == null) return
-
-        try {
-            selectedMarker?.let { marker ->
-                binding.mapView.overlays.remove(marker)
-            }
-
-            selectedMarker = Marker(binding.mapView).apply {
-                position = geoPoint
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                title = "Selected Location"
-            }
-            binding.mapView.overlays.add(selectedMarker)
-            binding.mapView.invalidate()
-            binding.mapView.controller.setCenter(geoPoint)
-        } catch (e: Exception) {
-            Log.e("MapFragment", "Update marker failed: ${e.message}", e)
-            binding.statusText.text = "Failed to update map marker"
-            Snackbar.make(binding.root, "Failed to update map marker", Snackbar.LENGTH_SHORT).show()
+    private fun updateSelectedLocation(geoPoint: GeoPoint) {
+        selectedMarker?.let { marker ->
+            binding.mapView.overlays.remove(marker)
         }
+
+        selectedMarker = Marker(binding.mapView).apply {
+            position = geoPoint
+            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            title = "Selected Location"
+        }
+        binding.mapView.overlays.add(selectedMarker)
+        binding.mapView.invalidate()
     }
 
     override fun onResume() {
@@ -411,7 +251,7 @@ class MapFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
-
+        binding.mapView.onPause()
     }
 
     override fun onDestroyView() {
@@ -420,3 +260,4 @@ class MapFragment : Fragment() {
         _binding = null
     }
 }
+
