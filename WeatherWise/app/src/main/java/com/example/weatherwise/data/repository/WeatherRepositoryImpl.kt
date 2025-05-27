@@ -81,68 +81,103 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
             newLocation.id
         }
     }
-    private suspend fun fetchAndSaveWeatherData(locationId: String, lat: Double, lon: Double) {
-        try {
-
+    private suspend fun fetchAndSaveWeatherData(locationId: String, lat: Double, lon: Double): Boolean {
+        return try {
             val units = preferencesManager.getApiUnits()
             val lang = preferencesManager.getLanguageCode()
-            val currentWeatherResponse = remoteDataSource.getCurrentWeather(lat, lon, units, lang)
-                ?: throw Exception("Failed to fetch current weather")
-            val forecastResponse = remoteDataSource.get5DayForecast(lat, lon, units, lang)
-                ?: throw Exception("Failed to fetch forecast")
 
+            val currentWeather = remoteDataSource.getCurrentWeather(lat, lon, units, lang)
+                ?: return false
+            val forecast = remoteDataSource.get5DayForecast(lat, lon, units, lang)
+                ?: return false
 
-            localDataSource.deleteCurrentWeather(locationId)
-            localDataSource.deleteForecast(locationId)
-            localDataSource.deleteStaleWeather(System.currentTimeMillis() - STALE_DATA_THRESHOLD)
-
-
-
-
-
-            localDataSource.saveCurrentWeather(locationId, currentWeatherResponse)
-            localDataSource.saveForecast(locationId, forecastResponse)
+            withContext(Dispatchers.IO) {
+                localDataSource.apply {
+                    deleteCurrentWeather(locationId)
+                    deleteForecast(locationId)
+                    saveCurrentWeather(locationId, currentWeather)
+                    saveForecast(locationId, forecast)
+                }
+            }
+            true
         } catch (e: Exception) {
-            Log.e(TAG, "Error fetching and saving weather data: ${e.message}", e)
-            throw e
+            Log.e(TAG, "Fetch failed, using cached data", e)
+            false
+        }
+    }
+
+    override suspend fun getCurrentLocationWithWeather(
+        forceRefresh: Boolean,
+        isNetworkAvailable: Boolean
+    ): LocationWithWeather? {
+        return try {
+            val locationId = when (preferencesManager.getLocationMethod()) {
+                PreferencesManager.LOCATION_MANUAL -> {
+                    preferencesManager.getManualLocationWithAddress()?.let { (lat, lon, address) ->
+                        getOrCreateLocationId(lat, lon, isCurrent = true).also { id ->
+                            if (address.isNotEmpty()) {
+                                localDataSource.updateLocationName(id, address)
+                            }
+                        }
+                    }
+                }
+                PreferencesManager.LOCATION_GPS -> {
+                    localDataSource.getCurrentLocation()?.id
+                }
+                else -> null
+            } ?: return null
+
+            // Try network if available and needed
+            if (isNetworkAvailable && (forceRefresh || needsRefresh(locationId))) {
+                val success = fetchAndSaveWeatherData(locationId,
+                    localDataSource.getLocation(locationId)?.latitude ?: 0.0,
+                    localDataSource.getLocation(locationId)?.longitude ?: 0.0
+                )
+                if (!success && forceRefresh) {
+                    Log.w(TAG, "Force refresh failed, using cached data")
+                }
+            }
+
+            // Always fall back to local data
+            localDataSource.getLocationWithWeather(locationId)?.also {
+                Log.d(TAG, "Returning ${if (isNetworkAvailable) "network" else "cached"} data")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting weather data", e)
+            null
         }
     }
 
 
 
-
-    override suspend fun getCurrentLocationWithWeather(forceRefresh: Boolean, isNetworkAvailable: Boolean): LocationWithWeather? {
-        val locationId = when (preferencesManager.getLocationMethod()) {
-            PreferencesManager.LOCATION_MANUAL -> {
-                preferencesManager.getManualLocationWithAddress()?.let { (lat, lon, address) ->
-                    val id = getOrCreateLocationId(lat, lon, isCurrent = true)
-                    if (address.isNotEmpty()) {
-                        localDataSource.updateLocationName(id, address)
-                    }
-                    id
-                }
-            }
-            PreferencesManager.LOCATION_GPS -> {
-                localDataSource.getCurrentLocation()?.id
-            }
-            else -> null
-        } ?: return null
-
-        return fetchLocationWithWeather(locationId, forceRefresh, isNetworkAvailable)
-    }
 
     private suspend fun fetchLocationWithWeather(locationId: String, forceRefresh: Boolean, isNetworkAvailable: Boolean): LocationWithWeather? {
         return try {
             val location = localDataSource.getLocation(locationId) ?: return null
-            if (isNetworkAvailable && (forceRefresh || needsRefresh(locationId))) {
-                fetchAndSaveWeatherData(locationId, location.latitude, location.longitude)
+
+            if (isNetworkAvailable) {
+                try {
+                    if (forceRefresh || needsRefresh(locationId)) {
+                        fetchAndSaveWeatherData(locationId, location.latitude, location.longitude)
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Network operation failed, falling back to local data", e)
+                    // Continue with local data
+                }
             }
-            localDataSource.getLocationWithWeather(locationId)
+
+            // Always return whatever local data we have
+            localDataSource.getLocationWithWeather(locationId)?.also {
+                if (!isNetworkAvailable) {
+                    Log.d(TAG, "Returning cached data (offline mode) for $locationId")
+                }
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Error fetching location with weather: ${e.message}", e)
-            localDataSource.getLocationWithWeather(locationId) // Return cached data if available
+            Log.e(TAG, "Error in fetchLocationWithWeather", e)
+            null
         }
     }
+
 
     private suspend fun handleGpsLocation(forceRefresh: Boolean, isNetworkAvailable: Boolean): LocationWithWeather? {
         val currentLocation = localDataSource.getCurrentLocation() ?: return null

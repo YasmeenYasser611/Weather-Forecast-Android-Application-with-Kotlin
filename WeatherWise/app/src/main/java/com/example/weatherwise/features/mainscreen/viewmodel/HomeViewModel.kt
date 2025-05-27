@@ -103,7 +103,10 @@ class HomeViewModel(
 
     private fun fetchWeatherData(lat: Double? = null, lon: Double? = null, forceRefresh: Boolean = false) {
         viewModelScope.launch {
-            safeWeatherCall {
+            _loading.value = true
+            _error.value = null
+
+            try {
                 val currentLat = lat ?: _locationData.value?.latitude
                 val currentLon = lon ?: _locationData.value?.longitude
 
@@ -113,6 +116,7 @@ class HomeViewModel(
 
                 repository.setCurrentLocation(currentLat, currentLon)
                 val isNetworkAvailable = networkStatusChecker.isNetworkAvailable()
+
                 val weatherData = repository.getCurrentLocationWithWeather(
                     forceRefresh = forceRefresh,
                     isNetworkAvailable = isNetworkAvailable
@@ -120,11 +124,23 @@ class HomeViewModel(
 
                 if (weatherData != null) {
                     postWeatherAndLocation(currentLat, currentLon, weatherData)
-                } else if (!isNetworkAvailable) {
-                    throw IllegalStateException("Failed to fetch current weather")
+                    if (!isNetworkAvailable) {
+                        _error.value = "Showing cached data (offline)"
+                    }
                 } else {
-                    throw IllegalStateException("No weather data available")
+                    throw IllegalStateException(
+                        if (isNetworkAvailable) "Failed to load weather data"
+                        else "No cached data available"
+                    )
                 }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Weather data error", e)
+                _error.value = when {
+                    e.message?.contains("No cached data") == true -> "No data available (offline)"
+                    else -> e.message ?: "Error loading weather data"
+                }
+            } finally {
+                _loading.value = false
             }
         }
     }
@@ -157,6 +173,7 @@ class HomeViewModel(
         }
     }
 
+
     private suspend fun safeWeatherCall(block: suspend () -> Unit) {
         _loading.value = true
         _error.value = null
@@ -164,10 +181,18 @@ class HomeViewModel(
             block()
         } catch (e: IllegalStateException) {
             Log.e("HomeViewModel", "Weather error: ${e.message}", e)
-            _error.value = e.message
+            _error.value = when {
+                e.message?.contains("offline") == true -> "You're offline - showing cached data"
+                e.message?.contains("No location") == true -> "Location not available"
+                else -> e.message ?: "An error occurred"
+            }
         } catch (e: Exception) {
             Log.e("HomeViewModel", "Unexpected error", e)
-            _error.value = "Error: ${e.message}"
+            _error.value = if (networkStatusChecker.isNetworkAvailable()) {
+                "Error: ${e.message ?: "Please try again"}"
+            } else {
+                "You're offline - showing cached data"
+            }
         } finally {
             _loading.value = false
         }
