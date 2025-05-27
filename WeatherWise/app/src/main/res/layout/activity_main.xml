@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    tools:context=".main.MainActivity">
+    tools:context=".features.main.MainActivity">
 
     <!-- Main content area where fragments will be loaded -->
     <androidx.fragment.app.FragmentContainerView

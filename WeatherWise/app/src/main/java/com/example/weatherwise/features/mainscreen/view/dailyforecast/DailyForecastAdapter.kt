@@ -1,4 +1,4 @@
-package com.example.weatherwise.features.mainscreen.view.dailyforecat
+package com.example.weatherwise.features.mainscreen.view.dailyforecast
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater

@@ -1,13 +1,15 @@
-package com.example.weatherwise.features.mainscreen.usecase
-
+package com.example.weatherwise.utils
 
 import com.example.weatherwise.data.model.domain.DailyForecast
 import com.example.weatherwise.data.model.domain.HourlyForecast
 import com.example.weatherwise.data.model.response.WeatherResponse
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
-class ProcessForecastUseCase {
+class WeatherDataProcessor {
     fun processHourlyForecast(forecast: WeatherResponse?, currentTime: Long): List<HourlyForecast> {
         val hourFormat = SimpleDateFormat("h a", Locale.getDefault()).apply {
             timeZone = TimeZone.getTimeZone("UTC")

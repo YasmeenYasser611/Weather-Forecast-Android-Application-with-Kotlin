@@ -20,7 +20,7 @@ import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentFavItemBinding
-import com.example.weatherwise.features.mainscreen.view.dailyforecat.DailyForecastAdapter
+import com.example.weatherwise.features.mainscreen.view.dailyforecast.DailyForecastAdapter
 import com.example.weatherwise.features.mainscreen.view.hourlyforecast.HourlyForecastAdapter
 
 import com.example.weatherwise.features.mainscreen.viewmodel.HomeViewModel

@@ -26,7 +26,7 @@ import com.example.weatherwise.data.model.entity.WeatherAlert
 import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
-import com.example.weatherwise.main.MainActivity
+import com.example.weatherwise.features.main.MainActivity
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import java.text.SimpleDateFormat
 import java.util.Date

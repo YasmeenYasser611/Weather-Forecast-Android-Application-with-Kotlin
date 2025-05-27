@@ -29,7 +29,7 @@ import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentAlarmBinding
 import com.example.weatherwise.features.alarms.worker.AlarmService
-import com.example.weatherwise.main.MainActivity
+import com.example.weatherwise.features.main.MainActivity
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
