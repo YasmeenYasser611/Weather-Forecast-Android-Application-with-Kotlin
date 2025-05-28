@@ -31,7 +31,7 @@ class AlarmService : Service() {
                     NotificationManager.IMPORTANCE_HIGH
                 ).apply {
                     description = "Channel for weather alerts"
-                    setSound(null, null) // Sound handled by MediaPlayer
+                    setSound(null, null)
                     enableVibration(true)
                     lockscreenVisibility = Notification.VISIBILITY_PUBLIC
                 }
@@ -65,7 +65,6 @@ class AlarmService : Service() {
 
         startForeground(1, notification)
 
-        // Play sound based on notification type
         if (notificationType == "ALARM" || notificationType == "SOUND") {
             try {
                 when (notificationType) {

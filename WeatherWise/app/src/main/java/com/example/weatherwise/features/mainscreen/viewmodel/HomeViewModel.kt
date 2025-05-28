@@ -22,7 +22,6 @@ class HomeViewModel(
     private val preferencesManager: PreferencesManager,
 ) : ViewModel() {
 
-    // LiveData declarations
     private val _locationData = MutableLiveData<LocationData>()
     val locationData: LiveData<LocationData> = _locationData
 
@@ -38,7 +37,6 @@ class HomeViewModel(
     private val _isTemporaryLocation = MutableLiveData<Boolean>(false)
     val isTemporaryLocation: LiveData<Boolean> = _isTemporaryLocation
 
-    // Helper classes
     private val networkStatusChecker = NetworkStatusChecker(connectivityManager)
     private val weatherDataProcessor = WeatherDataProcessor()
     private val locationHelperDelegate = LocationHelperDelegate(
@@ -53,7 +51,6 @@ class HomeViewModel(
         onLoading = { isLoading -> _loading.postValue(isLoading) }
     )
 
-    // Location-related functions
     fun checkLocationPermissions(): Boolean = locationHelperDelegate.checkLocationPermissions()
     fun isLocationEnabled(): Boolean = locationHelperDelegate.isLocationEnabled()
     fun enableLocationServices() = locationHelperDelegate.enableLocationServices()
@@ -81,12 +78,10 @@ class HomeViewModel(
         val targetTempUnit = currentSettings["temperature_unit"] as? String ?: PreferencesManager.TEMP_CELSIUS
         val targetWindUnit = currentSettings["wind_speed_unit"] as? String ?: PreferencesManager.WIND_METERS_PER_SEC
 
-        // Skip conversion if cached units match target units
         if (weatherData.temperatureUnit == targetTempUnit && weatherData.windSpeedUnit == targetWindUnit) {
             return weatherData
         }
 
-        // Convert current weather
         val currentWeather = weatherData.currentWeather?.copy()?.apply {
             main.temp = UnitConverter.convertTemperature(main.temp, weatherData.temperatureUnit, targetTempUnit)
             main.temp_min = UnitConverter.convertTemperature(main.temp_min, weatherData.temperatureUnit, targetTempUnit)
@@ -94,7 +89,6 @@ class HomeViewModel(
             wind.speed = UnitConverter.convertWindSpeed(wind.speed, weatherData.windSpeedUnit, targetWindUnit)
         }
 
-        // Convert forecast
         val forecast = weatherData.forecast?.copy()?.apply {
             list.forEach { forecastItem ->
                 forecastItem.main.temp = UnitConverter.convertTemperature(forecastItem.main.temp, weatherData.temperatureUnit, targetTempUnit)
@@ -104,14 +98,14 @@ class HomeViewModel(
             }
         }
 
-        // Convert hourly forecast
+
         val hourlyForecast = weatherData.hourlyForecast?.map { hourly ->
             hourly.copy(
                 temperature = UnitConverter.convertTemperature(hourly.temperature, weatherData.temperatureUnit, targetTempUnit)
             )
         }
 
-        // Convert daily forecast
+
         val dailyForecast = weatherData.dailyForecast?.map { daily ->
             daily.copy(
                 highTemperature = UnitConverter.convertTemperature(daily.highTemperature, weatherData.temperatureUnit, targetTempUnit),
@@ -124,8 +118,8 @@ class HomeViewModel(
             forecast = forecast,
             hourlyForecast = hourlyForecast,
             dailyForecast = dailyForecast,
-            temperatureUnit = targetTempUnit, // Update to reflect new units
-            windSpeedUnit = targetWindUnit // Update to reflect new units
+            temperatureUnit = targetTempUnit,
+            windSpeedUnit = targetWindUnit
         )
     }
 
@@ -209,7 +203,6 @@ class HomeViewModel(
             dailyForecast = weatherDataProcessor.processDailyForecast(data.forecast)
         )
 
-        // Apply offline settings changes if needed
         if (!networkStatusChecker.isNetworkAvailable()) {
             weatherData = applyOfflineSettingsChanges(weatherData)
         }

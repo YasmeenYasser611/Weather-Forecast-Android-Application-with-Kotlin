@@ -34,7 +34,7 @@ class WeatherAlertsAdapter(
             binding.btnToggle.text = if (alert.isActive) "Turn Off" else "Turn On"
             binding.btnToggle.setOnClickListener { onToggle(alert) }
 
-            // Set appropriate icon based on alert type
+
             val iconRes = when (alert.type.lowercase(Locale.getDefault())) {
                 "rain" -> R.drawable.rain
                 "snow" -> R.drawable.nightrain
@@ -43,7 +43,6 @@ class WeatherAlertsAdapter(
             }
             binding.ivAlertType.setImageResource(iconRes)
 
-            // Handle delete button click
             binding.btnDelete.setOnClickListener {
                 onDelete(alert)
             }

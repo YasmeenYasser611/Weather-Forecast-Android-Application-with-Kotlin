@@ -36,14 +36,14 @@ class FavoritesViewModel(private val repository: IWeatherRepository, private val
     fun removeFavorite(locationId: String) {
         viewModelScope.launch {
             repository.removeFavoriteLocation(locationId)
-            loadFavorites() // Refresh the list
+            loadFavorites()
         }
     }
 
     fun refreshFavorite(locationId: String) {
         viewModelScope.launch {
             repository.refreshLocation(locationId)
-            loadFavorites() // Refresh the list
+            loadFavorites()
         }
     }
     suspend fun getAddressForCoordinates(lat: Double, lon: Double): String? {

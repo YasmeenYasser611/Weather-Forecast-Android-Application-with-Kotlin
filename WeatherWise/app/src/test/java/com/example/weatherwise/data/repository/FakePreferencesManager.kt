@@ -45,7 +45,6 @@ class FakePreferencesManager : IPreferencesManager {
         return temperatureUnit != newUnit
     }
 
-    // Helper methods for testing
     fun setTemperatureUnit(unit: String) {
         temperatureUnit = unit
     }

@@ -53,18 +53,22 @@ class MapFragment : Fragment() {
     private lateinit var locationAdapter: LocationListAdapter
 
     private val viewModel: MapViewModel by viewModels {
-        val repository = WeatherRepositoryImpl.getInstance(
+
+
+        val favoritesFactory = FavoritesViewModelFactory(WeatherRepositoryImpl.getInstance(
             WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
             LocalDataSourceImpl(LocalDatabase.getInstance(requireContext()).weatherDao()),
             PreferencesManager(requireContext())
-        )
-
-        val favoritesFactory = FavoritesViewModelFactory(repository, LocationHelper(requireContext()))
+        ), LocationHelper(requireContext()))
         favoritesViewModel = ViewModelProvider(this, favoritesFactory)[FavoritesViewModel::class.java]
 
         val settingsFactory = SettingsViewModelFactory(
             LocationHelper(requireContext()),
-            repository,
+            WeatherRepositoryImpl.getInstance(
+                WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
+                LocalDataSourceImpl(LocalDatabase.getInstance(requireContext()).weatherDao()),
+                PreferencesManager(requireContext())
+            ),
             PreferencesManager(requireContext()),
             requireContext()
         )
@@ -82,10 +86,7 @@ class MapFragment : Fragment() {
         )
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMapBinding.inflate(inflater, container, false)
         return binding.root
     }

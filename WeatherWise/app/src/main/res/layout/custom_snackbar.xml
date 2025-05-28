@@ -8,7 +8,6 @@
     android:background="@drawable/snackbar_background_dark"
     android:padding="16dp">
 
-    <!-- Action buttons container (top-right corner) -->
     <LinearLayout
         android:id="@+id/buttons_container"
         android:layout_width="wrap_content"
@@ -17,7 +16,7 @@
         android:layout_alignParentTop="true"
         android:orientation="horizontal">
 
-        <!-- Undo button -->
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/snackbar_undo"
             style="@style/Widget.MaterialComponents.Button.TextButton"
@@ -34,7 +33,7 @@
             android:paddingStart="16dp"
             android:paddingEnd="16dp"/>
 
-        <!-- Delete button -->
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/snackbar_cancel"
             style="@style/Widget.MaterialComponents.Button.TextButton"
@@ -51,7 +50,6 @@
             android:layout_marginStart="8dp"/>
     </LinearLayout>
 
-    <!-- Message text (bottom-left corner) -->
     <TextView
         android:id="@+id/snackbar_text"
         android:layout_width="match_parent"

@@ -57,7 +57,7 @@ class WeatherAlertsFragment : Fragment() {
     private lateinit var adapter: WeatherAlertsAdapter
     private var addAlertDialog: AlertDialog? = null
 
-    // Activity result launcher for overlay permission
+
     private val requestOverlayPermission = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && !Settings.canDrawOverlays(requireContext())) {
             Snackbar.make(
@@ -68,11 +68,7 @@ class WeatherAlertsFragment : Fragment() {
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAlarmsBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -108,7 +104,6 @@ class WeatherAlertsFragment : Fragment() {
                 }
             },
             onDelete = { alert ->
-                // Find the position of the alert in the current list
                 val position = adapter.currentList.indexOf(alert)
                 if (position != -1) {
                     deleteAlertWithUndo(alert, position)
@@ -174,7 +169,6 @@ class WeatherAlertsFragment : Fragment() {
                 requestNotificationPermission()
             }
         }
-        // Check overlay permission for pre-Android 10
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && !Settings.canDrawOverlays(requireContext())) {
             requestOverlayPermission()
         }
@@ -311,13 +305,11 @@ class WeatherAlertsFragment : Fragment() {
     }
 
 
-    // First, add this function to your WeatherAlertsFragment
     @SuppressLint("RestrictedApi")
     private fun showCustomAlertSnackbar(removedAlert: WeatherAlert, originalPosition: Int) {
-        // Inflate custom layout
+
         val snackView = layoutInflater.inflate(R.layout.custom_snackbar, null)
 
-        // Create and configure Snackbar
         val snackbar = Snackbar.make(binding.root, "", Snackbar.LENGTH_INDEFINITE).apply {
             view.setBackgroundColor(Color.TRANSPARENT)
             (view as? Snackbar.SnackbarLayout)?.apply {
@@ -326,17 +318,15 @@ class WeatherAlertsFragment : Fragment() {
             }
         }
 
-        // Configure custom view
         snackView.apply {
             findViewById<TextView>(R.id.snackbar_text).text =
                 "Deleted ${removedAlert.type} alert"
 
             findViewById<Button>(R.id.snackbar_undo).setOnClickListener {
-                // Undo action - reinsert item
                 val currentList = adapter.currentList.toMutableList()
                 currentList.add(originalPosition, removedAlert)
                 adapter.submitList(currentList)
-                viewModel.addAlert(removedAlert) // Restore in database
+                viewModel.addAlert(removedAlert)
                 if (removedAlert.isActive) {
                     scheduleAlarmIfNeeded(removedAlert)
                 }
@@ -344,12 +334,10 @@ class WeatherAlertsFragment : Fragment() {
             }
 
             findViewById<Button>(R.id.snackbar_cancel).setOnClickListener {
-                // Confirm deletion - no need to do anything since we already deleted
                 snackbar.dismiss()
             }
         }
 
-        // Show snackbar with 10 second timeout as fallback
         snackbar.show()
         snackView.postDelayed({
             if (snackbar.isShown) {
@@ -358,18 +346,14 @@ class WeatherAlertsFragment : Fragment() {
         }, 10000)
     }
 
-    // Then modify your deleteAlertWithUndo function to be simpler:
     private fun deleteAlertWithUndo(alert: WeatherAlert, position: Int) {
-        // Cancel the alarm and delete from database
         cancelAlarm(alert.id)
         viewModel.deleteAlert(alert.id)
 
-        // Create a mutable copy of the current list and remove the item
         val currentList = adapter.currentList.toMutableList()
         currentList.removeAt(position)
         adapter.submitList(currentList)
 
-        // Show custom Snackbar
         showCustomAlertSnackbar(alert, position)
     }
 

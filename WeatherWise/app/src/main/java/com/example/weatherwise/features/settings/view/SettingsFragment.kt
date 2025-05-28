@@ -24,7 +24,7 @@ import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentSettingsBinding
-import com.example.weatherwise.features.main.MainActivity
+import com.example.weatherwise.main.MainActivity
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModel
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModelFactory
@@ -181,20 +181,14 @@ class SettingsFragment : Fragment() {
                 else -> "en"
             }
 
-            // Update locale immediately
             (requireActivity() as MainActivity).updateLocale(language)
 
-            // Update this fragment's UI
             updateLanguage()
 
-            // Show toast in the new language
             val toastText = if (language == "ar") "تم حفظ الإعدادات" else "Settings saved"
             Toast.makeText(requireContext(), toastText, Toast.LENGTH_SHORT).show()
 
-            // Notify MainActivity to refresh navigation drawer
             (requireActivity() as MainActivity).refreshActivityUI()
-
-            // Navigate back (optional, remove if you want to stay in settings)
             findNavController().navigateUp()
         }
 

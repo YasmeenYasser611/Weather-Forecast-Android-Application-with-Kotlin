@@ -20,7 +20,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.weatherwise.features.main.MainActivity
+import com.example.weatherwise.main.MainActivity
 import com.example.weatherwise.R
 import com.example.weatherwise.data.local.LocalDataSourceImpl
 import com.example.weatherwise.data.local.LocalDatabase
@@ -57,11 +57,7 @@ class HomeFragment : Fragment() {
         handlePermissionResult(permissions)
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentWeatherBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -83,7 +79,7 @@ class HomeFragment : Fragment() {
         preferencesManager = PreferencesManager(requireContext())
     }
 
-    // In HomeFragment's setupViewModel()
+
     private fun setupViewModel() {
         val vmFactory = HomeViewModelFactory(
             repository = WeatherRepositoryImpl.getInstance(
@@ -98,7 +94,6 @@ class HomeFragment : Fragment() {
 
         viewModel = ViewModelProvider(this, vmFactory)[HomeViewModel::class.java]
 
-        // Check if we're showing a temporary favorite location
         arguments?.let { args ->
             if (args.getBoolean("is_temporary", false)) {
                 args.getString("location_id")?.let { locationId ->
@@ -108,7 +103,6 @@ class HomeFragment : Fragment() {
             }
         }
 
-        // Normal behavior if not showing a temporary location
         viewModel.getFreshLocation()
     }
 
@@ -119,13 +113,11 @@ class HomeFragment : Fragment() {
         binding.rvHourlyForecast.apply {
             layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
                 .apply {
-                    // Add this to prevent initial measurement issues
-                    initialPrefetchItemCount = 24 // or your expected item count
+                    initialPrefetchItemCount = 24
                 }
             adapter = hourlyAdapter
             setHasFixedSize(true)
-            // Add this to prevent clipping
-            setItemViewCacheSize(24) // or your expected item count
+            setItemViewCacheSize(24)
         }
 
         binding.rvWeeklyForecast.apply {
@@ -139,7 +131,6 @@ class HomeFragment : Fragment() {
         viewModel.weatherData.observe(viewLifecycleOwner) { weatherData ->
             weatherData?.let {
                 updateWeatherUI(it)
-//                hourlyAdapter.submitList(it.hourlyForecast ?: emptyList())
                 hourlyAdapter.submitList(it.hourlyForecast ?: emptyList()) {
                     binding.rvHourlyForecast.post {
                         binding.rvHourlyForecast.requestLayout()
@@ -306,37 +297,33 @@ class HomeFragment : Fragment() {
         val locale = Locale(languageCode)
         Locale.setDefault(locale)
 
-        // Update configuration
+
         val config = Configuration(resources.configuration)
         config.setLocale(locale)
         resources.updateConfiguration(config, resources.displayMetrics)
 
-        // Update layout direction
+
         binding.root.layoutDirection = if (languageCode == "ar") {
             View.LAYOUT_DIRECTION_RTL
         } else {
             View.LAYOUT_DIRECTION_LTR
         }
 
-        // Update static text views
+
         binding.tabHourly.text = getString(R.string.hourly)
         binding.tabWeekly.text = getString(R.string.weekly)
 
-        // Update weather data display
         viewModel.weatherData.value?.let { weatherData ->
             updateWeatherUI(weatherData)
         }
 
-        // Notify adapters to refresh
         hourlyAdapter.notifyDataSetChanged()
         dailyAdapter.notifyDataSetChanged()
 
-        // Update city name if available
         viewModel.locationData.value?.let {
             binding.tvCityName.text = it.address
         }
 
-        // Force UI refresh
         binding.root.invalidate()
         binding.root.requestLayout()
     }

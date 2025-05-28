@@ -86,7 +86,7 @@ class WeatherRepositoryImplTest {
    setWeatherResponse(testWeatherResponse)
   }
   localDataSource = FakeLocalDataSource().apply {
-   saveLocation(testLocation) // ✅ Now inside a coroutine
+   saveLocation(testLocation)
   }
   preferencesManager = FakePreferencesManager().apply {
    setTemperatureUnit("celsius")
@@ -142,7 +142,6 @@ fun saveMultipleAlertsAndFetchAll_returnsAllAlerts() = runTest {
  @Test
  fun getCurrentLocationWithWeather_withoutNetworkRefresh_returnsCachedData() = runTest {
   repository.setCurrentLocation(30.0, 31.0)
-  // Simulate no network refresh
   val result = repository.getCurrentLocationWithWeather(false, false)
 
   assertThat(result?.location?.name, `is`("Cairo"))

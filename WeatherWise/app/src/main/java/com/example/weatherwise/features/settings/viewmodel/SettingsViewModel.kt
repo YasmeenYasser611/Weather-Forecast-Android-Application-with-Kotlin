@@ -36,7 +36,6 @@ class SettingsViewModel(
     private val context: Context
 ) : ViewModel() {
 
-    // LiveData for UI state
     private val _locationMethod = MutableLiveData<String>()
     val locationMethod: LiveData<String> = _locationMethod
 
@@ -73,7 +72,7 @@ class SettingsViewModel(
 
 
     init {
-        // Load initial settings from SharedPreferences
+
         _locationMethod.value = preferencesManager.getLocationMethod()
         _temperatureUnit.value = preferencesManager.getTemperatureUnit()
         _windSpeedUnit.value = preferencesManager.getWindSpeedUnit()
@@ -97,28 +96,6 @@ class SettingsViewModel(
         _notificationsEnabled.value = enabled
     }
 
-//    fun setNotificationsEnabled(enabled: Boolean, fromUser: Boolean = false) {
-//        if (enabled) {
-//            if (hasNotificationPermission()) {
-//                if (hasOverlayPermission()) {
-//                    // Both permissions granted, enable notifications
-//                    _notificationsEnabled.value = true
-//                    preferencesManager.setNotificationsEnabled(true)
-//                    createNotificationChannel()
-//                } else if (fromUser) {
-//                    // Request overlay permission
-//                    _requestOverlayPermission.value = true
-//                }
-//            } else if (fromUser) {
-//                // Request notification permission first
-//                _notificationPermissionRequest.value = true
-//            }
-//        } else {
-//            // Disable notifications
-//            _notificationsEnabled.value = false
-//            preferencesManager.setNotificationsEnabled(false)
-//        }
-//    }
     fun selectManualLocation() {
         _navigateToMap.value = true
     }
@@ -127,24 +104,19 @@ class SettingsViewModel(
         _navigateToMap.value = false
     }
 
-    // In SettingsViewModel.kt
     fun setCurrentLocation(lat: Double, lon: Double, address: String = "") {
         viewModelScope.launch {
             try {
-                // Set location method to manual first
+
                 _locationMethod.value = PreferencesManager.LOCATION_MANUAL
                 preferencesManager.setLocationMethod(PreferencesManager.LOCATION_MANUAL)
 
-                // Save the location coordinates and address
                 preferencesManager.setManualLocation(lat, lon, address)
 
-                // Save the location in repository
                 weatherRepository.setCurrentLocation(lat, lon )
 
-                // Force refresh weather data
                 refreshWeatherData()
 
-                // Persist all settings
                 saveSettings()
             } catch (e: Exception) {
                 _error.postValue("Failed to save location: ${e.message}")
@@ -167,14 +139,13 @@ class SettingsViewModel(
     }
 
 
-    // Add this to your ViewModel
     private val _saveComplete = MutableLiveData<Boolean>()
     val saveComplete: LiveData<Boolean> = _saveComplete
 
     fun setManualLocationCoordinates(lat: Double, lon: Double) {
         viewModelScope.launch {
             try {
-                // 1. Get address
+
                 val address = withContext(Dispatchers.IO) {
                     locationHelper.getLocationAddress(lat, lon).first
                 }
@@ -182,14 +153,11 @@ class SettingsViewModel(
                 Log.d("LocationDebug", "Address fetched: $address")
                 setCurrentLocation(lat , lon , address)
 
-                // 2. Save to all layers
                 preferencesManager.setManualLocation(lat, lon, address)
                 weatherRepository.setManualLocation(lat, lon, address)
 
-                // 3. Update LiveData
                 _locationMethod.value = PreferencesManager.LOCATION_MANUAL
 
-                // 4. Notify that save is complete
                 _saveComplete.postValue(true)
 
             } catch (e: Exception) {
@@ -238,7 +206,6 @@ class SettingsViewModel(
         _windSpeedUnit.value = unit
     }
 
-    // In SettingsViewModel.kt
     fun setLanguage(languageCode: String) {
         if (_language.value == languageCode) return
         _language.value = languageCode
@@ -248,17 +215,16 @@ class SettingsViewModel(
 
     fun saveSettings() {
         viewModelScope.launch {
-            // Save settings to PreferencesManager
+
             _locationMethod.value?.let { preferencesManager.setLocationMethod(it) }
             _temperatureUnit.value?.let { preferencesManager.setTemperatureUnit(it) }
             _windSpeedUnit.value?.let { preferencesManager.setWindSpeedUnit(it) }
             _language.value?.let { preferencesManager.setLanguage(it) }
             _notificationsEnabled.value?.let { preferencesManager.setNotificationsEnabled(it) }
 
-            // Notify that settings changed
             SettingsEventBus.notifySettingsChanged()
 
-            // Refresh weather if needed
+
             if (shouldRefreshWeather()) {
                 refreshWeatherData()
             }
@@ -283,7 +249,6 @@ class SettingsViewModel(
                 description = descriptionText
             }
 
-            // Register the channel with the system
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE)
                     as NotificationManager
             notificationManager.createNotificationChannel(channel)
@@ -310,7 +275,7 @@ class SettingsViewModel(
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
         } else {
-            // Permission not required before Android 13
+
             true
         }
     }
@@ -339,31 +304,26 @@ class SettingsViewModel(
         }
     }
 
-    // Modify the setNotificationsEnabled function
     fun setNotificationsEnabled(enabled: Boolean, fromUser: Boolean = false) {
         if (enabled) {
             if (hasNotificationPermission()) {
                 if (hasOverlayPermission()) {
-                    // Both permissions granted, enable notifications
+
                     _notificationsEnabled.value = true
                     preferencesManager.setNotificationsEnabled(true)
                     createNotificationChannel()
                 } else if (fromUser) {
-                    // Request overlay permission only when user enables notifications
+
                     _requestOverlayPermission.value = true
-                    // Don't enable notifications yet - wait for permission
                     _notificationsEnabled.value = false
                     preferencesManager.setNotificationsEnabled(false)
                 }
             } else if (fromUser) {
-                // Request notification permission first
                 _notificationPermissionRequest.value = true
-                // Don't enable notifications yet - wait for permission
                 _notificationsEnabled.value = false
                 preferencesManager.setNotificationsEnabled(false)
             }
         } else {
-            // Disable notifications but don't touch overlay permission
             _notificationsEnabled.value = false
             preferencesManager.setNotificationsEnabled(false)
         }
@@ -371,16 +331,14 @@ class SettingsViewModel(
 
 
 
-    // Add this function to handle overlay permission result
     fun onOverlayPermissionResult(granted: Boolean) {
         if (granted) {
-            // Now check if we have notification permission too
+
             if (hasNotificationPermission()) {
                 _notificationsEnabled.value = true
                 preferencesManager.setNotificationsEnabled(true)
                 createNotificationChannel()
             } else {
-                // Request notification permission
                 _notificationPermissionRequest.value = true
             }
         } else {

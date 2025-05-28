@@ -21,13 +21,10 @@ class AlarmDismissReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val alertId = intent.getStringExtra("alert_id") ?: return
 
-        // Stop the alarm service
         context.stopService(Intent(context, AlarmService::class.java))
 
-        // Cancel the notification
         NotificationManagerCompat.from(context).cancel(alertId.hashCode())
 
-        // Update the alert status in database
         val repo = WeatherRepositoryImpl.getInstance(
             WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
             LocalDataSourceImpl(LocalDatabase.getInstance(context).weatherDao()),

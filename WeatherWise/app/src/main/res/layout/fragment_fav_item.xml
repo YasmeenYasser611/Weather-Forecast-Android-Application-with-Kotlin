@@ -8,7 +8,7 @@
     android:layoutDirection="locale"
     android:textDirection="locale">
 
-    <!-- Fixed Background -->
+
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -16,7 +16,7 @@
         android:scaleType="centerCrop"
         android:contentDescription="@string/background_description" />
 
-    <!-- Scrollable Content with SwipeRefreshLayout -->
+
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe_refresh_layout"
         android:layout_width="match_parent"
@@ -32,7 +32,7 @@
                 android:layout_height="wrap_content"
                 android:paddingBottom="16dp">
 
-                <!-- Navigation Icon -->
+
                 <ImageButton
                     android:id="@+id/btn_back"
                     android:layout_width="48dp"
@@ -45,7 +45,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"/>
 
-                <!-- City Name -->
+
                 <TextView
                     android:id="@+id/tv_city_name"
                     android:layout_width="0dp"
@@ -91,7 +91,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tv_date_time" />
 
-                <!-- Current Temperature -->
+
                 <TextView
                     android:id="@+id/tv_temperature"
                     android:layout_width="wrap_content"
@@ -105,7 +105,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 android:layout_marginTop="8dp" />
 
-                <!-- Weather Description and High/Low -->
+
                 <TextView
                     android:id="@+id/tv_weather_description"
                     android:layout_width="wrap_content"
@@ -118,7 +118,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 android:layout_marginTop="8dp" />
 
-                <!-- Lottie Animation -->
+
                 <com.airbnb.lottie.LottieAnimationView
                     android:id="@+id/iv_weather_background"
                     android:layout_width="match_parent"
@@ -132,7 +132,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tv_weather_description" />
 
-                <!-- Forecast Section -->
+
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/forecast_container"
                     android:layout_width="match_parent"
@@ -143,7 +143,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent">
 
-                    <!-- Forecast Tabs -->
+
                     <LinearLayout
                         android:id="@+id/forecast_tabs"
                         android:layout_width="match_parent"
@@ -174,7 +174,7 @@
                             android:layout_marginStart="16dp" />
                     </LinearLayout>
 
-                    <!-- Hourly Forecast RecyclerView -->
+
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rv_hourly_forecast"
                         android:layout_width="match_parent"
@@ -185,7 +185,7 @@
                         app:layout_constraintStart_toStartOf="parent"
                         android:layout_marginTop="16dp" />
 
-                    <!-- 5-Day Forecast RecyclerView (Hidden by Default) -->
+
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rv_weekly_forecast"
                         android:layout_width="match_parent"
@@ -198,7 +198,7 @@
                         android:visibility="gone" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <!-- Weather Details (Pressure, Humidity, Wind, Cloud, UV, Visibility) -->
+
                 <androidx.gridlayout.widget.GridLayout
                     android:id="@+id/weather_details"
                     android:layout_width="match_parent"
@@ -213,7 +213,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent">
 
-                    <!-- Pressure -->
+
                     <LinearLayout
                         app:layout_column="0"
                         app:layout_row="0"
@@ -251,7 +251,7 @@
                             android:gravity="center" />
                     </LinearLayout>
 
-                    <!-- Humidity -->
+
                     <LinearLayout
                         app:layout_column="1"
                         app:layout_row="0"
@@ -287,7 +287,7 @@
                             android:gravity="center" />
                     </LinearLayout>
 
-                    <!-- Wind Speed -->
+
                     <LinearLayout
                         app:layout_column="2"
                         app:layout_row="0"
@@ -323,7 +323,7 @@
                             android:gravity="center" />
                     </LinearLayout>
 
-                    <!-- Cloud Cover -->
+
                     <LinearLayout
                         app:layout_column="0"
                         app:layout_row="1"
@@ -359,7 +359,7 @@
                             android:gravity="center" />
                     </LinearLayout>
 
-                    <!-- UV Index -->
+
                     <LinearLayout
                         app:layout_column="1"
                         app:layout_row="1"
@@ -395,7 +395,7 @@
                             android:gravity="center" />
                     </LinearLayout>
 
-                    <!-- Visibility -->
+
                     <LinearLayout
                         app:layout_column="2"
                         app:layout_row="1"

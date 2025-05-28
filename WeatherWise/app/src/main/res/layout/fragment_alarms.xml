@@ -8,7 +8,7 @@
     android:layoutDirection="locale"
     android:textDirection="locale">
 
-    <!-- Background image (consistent with your other screens) -->
+
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -26,7 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- Back button -->
+
             <ImageButton
                 android:id="@+id/btn_back"
                 android:layout_width="32dp"
@@ -39,7 +39,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"/>
 
-            <!-- Title -->
+
             <TextView
                 android:id="@+id/tv_title"
                 android:layout_width="0dp"
@@ -54,7 +54,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="@id/btn_back"/>
 
-            <!-- Description text -->
+
             <TextView
                 android:id="@+id/tv_description"
                 android:layout_width="0dp"
@@ -70,7 +70,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"/>
 
-            <!-- Active Alerts section header -->
+
             <TextView
                 android:id="@+id/tv_active_alerts"
                 android:layout_width="0dp"
@@ -86,7 +86,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"/>
 
-            <!-- RecyclerView for active alerts -->
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_active_alerts"
                 android:layout_width="match_parent"
@@ -99,7 +99,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 tools:listitem="@layout/item_weather_alert" />
 
-            <!-- Empty state view -->
+
             <LinearLayout
                 android:id="@+id/empty_state"
                 android:layout_width="match_parent"
@@ -143,7 +143,7 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Add Alert FAB (consistent with your style) -->
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add_alert"
         android:layout_width="wrap_content"
@@ -156,7 +156,6 @@
         app:tint="#4B0082"
         app:fabSize="normal" />
 
-    <!-- Snackbar anchor view -->
     <View
         android:id="@+id/snackbar_anchor"
         android:layout_width="match_parent"

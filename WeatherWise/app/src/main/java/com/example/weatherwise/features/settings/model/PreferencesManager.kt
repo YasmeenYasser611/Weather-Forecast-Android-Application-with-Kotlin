@@ -84,7 +84,6 @@ class PreferencesManager(context: Context) : IPreferencesManager {
         return getTemperatureUnit() != newUnit
     }
 
-    // Other methods unchanged
     fun setTemperatureUnit(unit: String) {
         sharedPreferences.edit { putString(KEY_TEMPERATURE_UNIT, unit) }
     }

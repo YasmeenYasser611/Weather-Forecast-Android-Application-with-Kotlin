@@ -10,7 +10,7 @@
     android:layoutDirection="locale"
     android:textDirection="locale">
 
-    <!-- Time -->
+
     <TextView
         android:id="@+id/tv_hour"
         android:layout_width="wrap_content"
@@ -23,7 +23,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Weather Icon -->
+
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/iv_weather_icon"
         android:layout_width="40dp"
@@ -37,7 +37,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tv_hour"/>
 
-    <!-- Temperature -->
+
     <TextView
         android:id="@+id/tv_temperature"
         android:layout_width="wrap_content"

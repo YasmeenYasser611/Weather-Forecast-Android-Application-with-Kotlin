@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class FakeLocalDataSource : ILocalDataSource {
-    // In-memory storage for testing
+
     val locations = mutableListOf<LocationEntity>()
     private val currentWeather = mutableMapOf<String, CurrentWeatherEntity>()
     private val forecasts = mutableMapOf<String, ForecastWeatherEntity>()
@@ -21,7 +21,7 @@ class FakeLocalDataSource : ILocalDataSource {
 
     private val alerts = mutableListOf<WeatherAlert>()
     private val alertsLiveData = MutableLiveData<List<WeatherAlert>>(alerts)
-    var shouldThrowError = false // Flag to simulate errors for testing
+    var shouldThrowError = false
 
     override suspend fun saveLocation(location: LocationEntity) {
         locations.removeAll { it.id == location.id }
@@ -114,36 +114,24 @@ class FakeLocalDataSource : ILocalDataSource {
     }
 
 
-    // In FakeLocalDataSource.kt
+
     override suspend fun setCurrentLocation(locationId: String) {
         locations.forEach {
-            it.isCurrent = it.id == locationId  // This should work but let's verify
+            it.isCurrent = it.id == locationId
         }
     }
 
     override suspend fun getCurrentLocation(): LocationEntity? {
-        return locations.find { it.isCurrent }  // Make sure this matches
+        return locations.find { it.isCurrent }
     }
-
-
-//    override fun getAllAlerts(): Flow<List<WeatherAlert>> {
-//        return alertsFlow.asStateFlow()
-//    }
-
-
-
-
-
-
-
 
 
 
     override suspend fun saveAlert(alert: WeatherAlert) {
         if (shouldThrowError) throw RuntimeException("Database error")
-        alerts.removeIf { it.id == alert.id } // Replace if exists
+        alerts.removeIf { it.id == alert.id }
         alerts.add(alert)
-        alertsLiveData.setValue(alerts) // Synchronous update
+        alertsLiveData.setValue(alerts)
     }
 
     override suspend fun getAlert(alertId: String): WeatherAlert? {
@@ -160,14 +148,14 @@ class FakeLocalDataSource : ILocalDataSource {
         val index = alerts.indexOfFirst { it.id == alert.id }
         if (index != -1) {
             alerts[index] = alert
-            alertsLiveData.setValue(alerts) // Synchronous update
+            alertsLiveData.setValue(alerts)
         }
     }
 
     override suspend fun deleteAlert(alertId: String) {
         if (shouldThrowError) throw RuntimeException("Database error")
         alerts.removeIf { it.id == alertId }
-        alertsLiveData.setValue(alerts) // Synchronous update
+        alertsLiveData.setValue(alerts)
     }
 
     override suspend fun getActiveAlerts(currentTime: Long): List<WeatherAlert> {
@@ -175,6 +163,5 @@ class FakeLocalDataSource : ILocalDataSource {
         return alerts.filter { it.isActive && it.startTime <= currentTime }
     }
 
-    // Helper method for tests to inspect state
     fun getAlerts(): List<WeatherAlert> = alerts
 }

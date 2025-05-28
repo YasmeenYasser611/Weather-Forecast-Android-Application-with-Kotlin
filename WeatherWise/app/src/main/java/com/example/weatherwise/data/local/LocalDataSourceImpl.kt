@@ -8,8 +8,7 @@ import com.example.weatherwise.data.model.domain.LocationWithWeather
 import com.example.weatherwise.data.model.entity.WeatherAlert
 import com.example.weatherwise.data.model.response.CurrentWeatherResponse
 import com.example.weatherwise.data.model.response.WeatherResponse
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+
 
 class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource {
 
@@ -102,7 +101,6 @@ class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource
         return weatherDao.findNearbyLocation(lat, lon)
     }
 
-    // Add this new function
     override suspend fun getFavoriteLocationsWithWeather(): List<LocationWithWeather> {
         return weatherDao.getFavoriteLocations().mapNotNull { location ->
             weatherDao.getLocationWithWeather(location.id)?.let { dbData ->

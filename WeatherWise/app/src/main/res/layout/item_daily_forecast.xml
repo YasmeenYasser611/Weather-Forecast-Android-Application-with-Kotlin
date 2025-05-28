@@ -10,7 +10,7 @@
     android:layoutDirection="locale"
     android:textDirection="locale">
 
-    <!-- Day -->
+
     <TextView
         android:id="@+id/tv_day"
         android:layout_width="wrap_content"
@@ -24,7 +24,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Weather Icon -->
+
 
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/iv_weather_icon"
@@ -39,7 +39,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_day" />
 
-    <!-- High/Low Temperature -->
+
     <TextView
         android:id="@+id/tv_high_low"
         android:layout_width="wrap_content"
@@ -52,7 +52,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="4dp" />
 
-    <!-- Weather Description -->
+
     <TextView
         android:id="@+id/tv_description"
         android:layout_width="wrap_content"

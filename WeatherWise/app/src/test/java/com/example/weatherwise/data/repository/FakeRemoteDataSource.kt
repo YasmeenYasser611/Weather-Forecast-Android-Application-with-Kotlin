@@ -6,12 +6,12 @@ import com.example.weatherwise.data.model.response.WeatherResponse
 import com.example.weatherwise.data.remote.IWeatherRemoteDataSource
 
 class FakeRemoteDataSource : IWeatherRemoteDataSource {
-    // Test data
+
     private var currentWeatherResponse: CurrentWeatherResponse? = null
     private var weatherResponse: WeatherResponse? = null
     private var geocodingResponses: List<GeocodingResponse> = emptyList()
 
-    // Control variables for testing
+
     var shouldReturnError = false
     var errorMessage = "Test error"
 
@@ -23,9 +23,7 @@ class FakeRemoteDataSource : IWeatherRemoteDataSource {
         weatherResponse = response
     }
 
-    fun setGeocodingResponses(responses: List<GeocodingResponse>) {
-        geocodingResponses = responses
-    }
+
 
     override suspend fun getCurrentWeather(
         lat: Double,

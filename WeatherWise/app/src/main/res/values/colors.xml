@@ -2,10 +2,10 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="colorPrimary">#4B0082</color>  <!-- Your primary color -->
-    <color name="colorOnPrimary">#FFFFFF</color> <!-- Text/icon color on primary -->
-    <color name="colorSecondary">#03DAC6</color> <!-- Your accent color -->
-    <color name="colorOnSecondary">#000000</color> <!-- Text/icon color on secondary -->
+    <color name="colorPrimary">#4B0082</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+    <color name="colorSecondary">#03DAC6</color>
+    <color name="colorOnSecondary">#000000</color>
 
     <color name="card_background">#F5F5F5</color>
 

@@ -69,8 +69,8 @@ class LocationHelper(private val context: Context) {
 
         val locationRequest = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
-            0 // Immediate update
-        ).setMaxUpdates(1) // Stop after one update
+            0
+        ).setMaxUpdates(1)
             .build()
 
         locationCallback = object : LocationCallback() {
@@ -103,7 +103,7 @@ class LocationHelper(private val context: Context) {
     ) {
         try {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                // Modern Geocoder API for Android 13+
+
                 Geocoder(context, Locale.getDefault()).getFromLocation(
                     location.latitude,
                     location.longitude,
@@ -132,7 +132,6 @@ class LocationHelper(private val context: Context) {
         }
     }
 
-    // Existing function - keeping exactly as is
     fun getAddressFromLocation(
         lat: Double,
         lon: Double,
@@ -153,7 +152,6 @@ class LocationHelper(private val context: Context) {
         }
     }
 
-    // Existing function - keeping exactly as is
     suspend fun getAddressFromLocation(lat: Double, lon: Double, any: Any): String {
         return suspendCoroutine { continuation ->
             this.getAddressFromLocation(lat, lon,
@@ -167,13 +165,6 @@ class LocationHelper(private val context: Context) {
         }
     }
 
-    /**
-     * NEW FUNCTION: Gets the address from latitude and longitude coordinates
-     * @param latitude The latitude of the location
-     * @param longitude The longitude of the location
-     * @return Pair containing (address: String, error: String?) where error is null if successful
-     */
-    // Make sure this function is properly implemented
     fun getLocationAddress(latitude: Double, longitude: Double): Pair<String, String?> {
         return try {
             val geocoder = Geocoder(context, Locale.getDefault())

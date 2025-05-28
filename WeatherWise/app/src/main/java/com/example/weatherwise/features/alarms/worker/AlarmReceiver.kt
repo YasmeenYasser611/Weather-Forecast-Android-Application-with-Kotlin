@@ -23,7 +23,7 @@ import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.remote.WeatherService
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentAlarmBinding
-import com.example.weatherwise.features.main.MainActivity
+import com.example.weatherwise.main.MainActivity
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +39,6 @@ class AlarmReceiver : BroadcastReceiver() {
 
         Log.d("AlarmReceiver", "Received intent with alert_id: $alertId, type: $notificationType, customSoundUri: $customSoundUri")
 
-        // Check notification permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             !NotificationManagerCompat.from(context).areNotificationsEnabled()
         ) {
@@ -47,13 +46,12 @@ class AlarmReceiver : BroadcastReceiver() {
             return
         }
 
-        // Check overlay permission
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && !Settings.canDrawOverlays(context)) {
             Log.e("AlarmReceiver", "Overlay permission not granted for alert: $alertId")
             return
         }
 
-        // Start foreground service for ALARM and SOUND notifications
+
         if (notificationType == "ALARM" || notificationType == "SOUND") {
             AlarmService.createNotificationChannel(context)
             val serviceIntent = Intent(context, AlarmService::class.java).apply {
@@ -69,7 +67,6 @@ class AlarmReceiver : BroadcastReceiver() {
             }
         }
 
-        // Show overlay dialog for all notification types
         showOverlayDialog(context, alertId, alertType, notificationType)
     }
 
@@ -97,16 +94,16 @@ class AlarmReceiver : BroadcastReceiver() {
         }
 
         dialogBinding.buttonDismiss.setOnClickListener {
-            // Stop the service for ALARM or SOUND notifications
+
             if (notificationType == "ALARM" || notificationType == "SOUND") {
                 context.stopService(Intent(context, AlarmService::class.java))
             }
-            // Update alert status
+
             updateAlertStatus(context, alertId)
             dialog.dismiss()
         }
 
-        // Add an action to open the app
+
         dialogBinding.buttonDismiss.setOnLongClickListener {
             val intent = Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

@@ -45,12 +45,10 @@ class WeatherAlertViewModelTest {
    isActive = true
   )
 
-  // Stub repository behavior
   coEvery { repository.saveAlert(alert) } returns Unit
 
   viewModel.addAlert(alert)
 
-  // Wait for coroutine to finish
   advanceUntilIdle()
 
   Assert.assertTrue(viewModel.alertsUpdated.getOrAwaitValue())
@@ -85,7 +83,6 @@ class WeatherAlertViewModelTest {
 
   viewModel.updateAlert(alert)
 
-  // Wait for coroutine to finish
   advanceUntilIdle()
 
   Assert.assertTrue(viewModel.alertsUpdated.getOrAwaitValue())

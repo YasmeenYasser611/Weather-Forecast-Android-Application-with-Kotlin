@@ -76,7 +76,7 @@ interface WeatherDao {
     @Query("UPDATE locations SET isFavorite = :isFavorite WHERE id = :locationId")
     suspend fun setFavoriteStatus(locationId: String, isFavorite: Boolean)
 
-    // Add this for reverse geocoding support
+
     @Query("SELECT * FROM locations WHERE latitude BETWEEN :lat-0.01 AND :lat+0.01 AND longitude BETWEEN :lon-0.01 AND :lon+0.01")
     suspend fun findNearbyLocation(lat: Double, lon: Double): LocationEntity?
 

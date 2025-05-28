@@ -17,7 +17,7 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <!-- Alert title/type -->
+
         <TextView
             android:id="@+id/tv_alert_title"
             android:layout_width="0dp"
@@ -30,7 +30,7 @@
             app:layout_constraintEnd_toStartOf="@id/iv_active"
             tools:text="@string/rain_alert" />
 
-        <!-- Active/inactive indicator -->
+
         <ImageView
             android:id="@+id/iv_active"
             android:layout_width="24dp"
@@ -40,7 +40,7 @@
             app:layout_constraintEnd_toStartOf="@id/btn_delete"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Delete button -->
+
         <ImageButton
             android:id="@+id/btn_delete"
             android:layout_width="24dp"
@@ -52,7 +52,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Time range -->
+
         <TextView
             android:id="@+id/tv_time_range"
             android:layout_width="0dp"
@@ -64,7 +64,6 @@
             app:layout_constraintEnd_toStartOf="@id/btn_toggle"
             tools:text="@string/active_until_8am" />
 
-        <!-- Toggle button -->
         <Button
             android:id="@+id/btn_toggle"
             android:layout_width="wrap_content"
@@ -75,7 +74,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/iv_active" />
 
-        <!-- Alert type icon and description -->
+
         <ImageView
             android:id="@+id/iv_alert_type"
             android:layout_width="20dp"

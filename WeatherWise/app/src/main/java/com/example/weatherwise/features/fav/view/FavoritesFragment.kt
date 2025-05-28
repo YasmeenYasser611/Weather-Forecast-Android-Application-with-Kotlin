@@ -62,14 +62,11 @@ class FavoritesFragment : Fragment() {
             LocationHelper(requireContext()),
         )
 
-        // Create ViewModel using the factory
-        // In both SettingsFragment and MapFragment, use:
         viewModel = ViewModelProvider(requireActivity(), factory)[FavoritesViewModel::class.java]
         setupRecyclerView()
         setupObservers()
         setupListeners()
 
-        // Load initial data
         viewModel.loadFavorites()
     }
 
@@ -150,10 +147,9 @@ class FavoritesFragment : Fragment() {
 
     @SuppressLint("RestrictedApi")
     private fun showCustomSnackbar(removedItem: LocationWithWeather, originalPosition: Int) {
-        // Inflate custom layout
+
         val snackView = layoutInflater.inflate(R.layout.custom_snackbar, null)
 
-        // Create and configure Snackbar
         val snackbar = Snackbar.make(binding.root, "", Snackbar.LENGTH_INDEFINITE).apply {
             view.setBackgroundColor(Color.TRANSPARENT)
             (view as? Snackbar.SnackbarLayout)?.apply {
@@ -162,13 +158,11 @@ class FavoritesFragment : Fragment() {
             }
         }
 
-        // Configure custom view
         snackView.apply {
             findViewById<TextView>(R.id.snackbar_text).text =
                 "Deleted ${removedItem.location.address ?: "location"}"
 
             findViewById<Button>(R.id.snackbar_undo).setOnClickListener {
-                // Undo action - reinsert item
                 val currentList = adapter.currentList.toMutableList()
                 currentList.add(originalPosition, removedItem)
                 adapter.submitList(currentList)
@@ -176,17 +170,14 @@ class FavoritesFragment : Fragment() {
             }
 
             findViewById<Button>(R.id.snackbar_cancel).setOnClickListener {
-                // Confirm deletion
                 viewModel.removeFavorite(removedItem.location.id)
                 snackbar.dismiss()
             }
         }
 
-        // Show snackbar with 10 second timeout as fallback
         snackbar.show()
         snackView.postDelayed({
             if (snackbar.isShown) {
-                // If still showing after timeout, confirm deletion
                 viewModel.removeFavorite(removedItem.location.id)
                 snackbar.dismiss()
             }

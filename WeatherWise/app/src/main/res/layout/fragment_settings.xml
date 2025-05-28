@@ -7,7 +7,7 @@
     android:layoutDirection="locale"
     android:textDirection="locale">
 
-    <!-- Same background as home screen for consistency -->
+
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -25,7 +25,7 @@
             android:layout_height="wrap_content"
             android:paddingBottom="16dp">
 
-            <!-- Back button (similar to menu button in home) -->
+
             <ImageButton
                 android:id="@+id/btn_back"
                 android:layout_width="32dp"
@@ -38,7 +38,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"/>
 
-            <!-- Settings Title -->
+
             <TextView
                 android:id="@+id/tv_settings_title"
                 android:layout_width="0dp"
@@ -53,7 +53,7 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp" />
 
-            <!-- Location Settings Card -->
+
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_location"
                 android:layout_width="0dp"
@@ -119,7 +119,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Units Settings Card -->
+
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_units"
                 android:layout_width="0dp"
@@ -148,7 +148,7 @@
                         android:textStyle="bold"
                         android:layout_marginBottom="8dp"/>
 
-                    <!-- Temperature Unit -->
+
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -191,7 +191,7 @@
                             android:buttonTint="@android:color/white"/>
                     </RadioGroup>
 
-                    <!-- Wind Speed Unit -->
+
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -227,7 +227,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Language Settings Card -->
+
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_language"
                 android:layout_width="0dp"
@@ -283,7 +283,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Notifications Settings Card -->
+
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_notifications"
                 android:layout_width="0dp"
@@ -325,7 +325,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Save Button -->
+
             <Button
                 android:id="@+id/btn_save_settings"
                 android:layout_width="0dp"

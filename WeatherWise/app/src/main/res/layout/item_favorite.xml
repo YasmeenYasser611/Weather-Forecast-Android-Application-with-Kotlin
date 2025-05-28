@@ -17,7 +17,7 @@
         android:layoutDirection="locale"
         android:textDirection="locale">
 
-        <!-- Temperature (Left side) -->
+
         <TextView
             android:id="@+id/tv_temperature"
             android:layout_width="wrap_content"
@@ -27,7 +27,7 @@
             android:textStyle="bold"
             android:layout_alignParentStart="true"/>
 
-        <!-- High/Low (Below temperature) -->
+
         <TextView
             android:id="@+id/tv_high_low"
             android:layout_width="wrap_content"
@@ -38,7 +38,7 @@
             android:textSize="14sp"
             android:layout_marginTop="4dp"/>
 
-        <!-- Location (Below high/low) -->
+
         <TextView
             android:id="@+id/tv_location_name"
             android:layout_width="wrap_content"
@@ -50,7 +50,7 @@
             android:textStyle="bold"
             android:layout_marginTop="8dp"/>
 
-        <!-- Weather Icon (Right side) -->
+
         <com.airbnb.lottie.LottieAnimationView
             android:id="@+id/iv_weather_icon"
             android:layout_width="60dp"
@@ -62,7 +62,7 @@
             app:lottie_fileName="weather_animation.json"
             app:lottie_loop="true" />
 
-        <!-- Weather Description (Below icon) -->
+
         <TextView
             android:id="@+id/tv_weather_description"
             android:layout_width="wrap_content"
@@ -73,7 +73,7 @@
             android:textSize="14sp"
             android:layout_marginTop="4dp"/>
 
-        <!-- Delete Button (Bottom right) -->
+
         <ImageButton
             android:id="@+id/btn_remove"
             android:layout_width="32dp"

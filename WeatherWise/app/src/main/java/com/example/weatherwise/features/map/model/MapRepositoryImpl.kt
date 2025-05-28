@@ -10,11 +10,7 @@ import java.net.URLEncoder
 import javax.net.ssl.HttpsURLConnection
 import kotlin.coroutines.CoroutineContext
 
-class MapRepositoryImpl(
-    private val ioDispatcher: CoroutineContext,
-    private val favoritesViewModel: FavoritesViewModel,
-    private val settingsViewModel: SettingsViewModel
-) : MapRepository {
+class MapRepositoryImpl(private val ioDispatcher: CoroutineContext, private val favoritesViewModel: FavoritesViewModel, private val settingsViewModel: SettingsViewModel) : MapRepository {
 
     override suspend fun searchLocation(query: String): List<SearchResult> {
         return withContext(ioDispatcher) {

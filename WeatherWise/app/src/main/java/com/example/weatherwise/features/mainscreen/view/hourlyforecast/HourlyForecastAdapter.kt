@@ -42,7 +42,6 @@ class HourlyForecastAdapter :
         val animationFile = WeatherIconMapper.getLottieAnimationForIcon(currentItem.icon)
         holder.binding.ivWeatherIcon.setAnimation(animationFile)
 
-        // Add this to ensure animation plays only once when bound
         holder.binding.ivWeatherIcon.post {
             holder.binding.ivWeatherIcon.playAnimation()
         }

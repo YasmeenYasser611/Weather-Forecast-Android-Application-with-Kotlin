@@ -39,40 +39,32 @@ class FavoritesAdapter(
         val item = getItem(position)
 
         holder.binding.apply {
-            // Set location name
             val address = item.location.address?.takeIf { it.isNotBlank() }
                 ?: "Unknown Location"
             tvLocationName.text = address
 
-            // Set temperature
             val temperature = item.currentWeather?.main?.temp?.toInt() ?: 0
             tvTemperature.text = "$temperature°"
 
-            // Set weather description
             val description = item.currentWeather?.weather?.firstOrNull()?.description
                 ?: "N/A"
             tvWeatherDescription.text = description.capitalize()
 
-            // Set high/low temperatures
             val highTemp = item.currentWeather?.main?.temp_max?.toInt() ?: 0
             val lowTemp = item.currentWeather?.main?.temp_min?.toInt() ?: 0
             tvHighLow.text = "H:$highTemp° L:$lowTemp°"
 
-            // Set weather icon animation
             val animationFile = WeatherIconMapper.getLottieAnimationForIcon(
                 item.currentWeather?.weather?.firstOrNull()?.icon
             )
             ivWeatherIcon.setAnimation(animationFile)
             ivWeatherIcon.playAnimation()
 
-            // Set click listeners
             btnRemove.setOnClickListener {
-                // First remove the item from the list
                 val removedItem = getItem(position)
                 val tempList = currentList.toMutableList().apply { removeAt(position) }
                 submitList(tempList)
 
-                // Show custom Snackbar with both actions
                 showUndoDeleteSnackbar(removedItem, position)
             }
             root.setOnClickListener { onItemClick(item) }

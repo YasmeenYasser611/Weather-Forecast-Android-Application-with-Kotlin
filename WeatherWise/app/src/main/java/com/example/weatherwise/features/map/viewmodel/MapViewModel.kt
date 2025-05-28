@@ -35,7 +35,7 @@ class MapViewModel(private val repository: MapRepository) : ViewModel() {
         searchJob = viewModelScope.launch {
             _mapState.postValue(MapState.Loading("Searching for \"$query\"..."))
 
-            delay(500) // Debounce
+            delay(500)
 
             try {
                 val results = withContext(Dispatchers.IO) {
