@@ -10,5 +10,5 @@ data class WeatherData(
     val hourlyForecast: List<HourlyForecast>?,
     val dailyForecast: List<DailyForecast>?,
     val temperatureUnit: String = PreferencesManager.TEMP_CELSIUS,
-    val windSpeedUnit: String = PreferencesManager.WIND_METERS_PER_SEC 
+    val windSpeedUnit: String = PreferencesManager.WIND_METERS_PER_SEC
 )

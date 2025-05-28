@@ -183,8 +183,9 @@ class HomeFragment : Fragment() {
         binding.swipeRefreshLayout.setOnRefreshListener { viewModel.refreshCurrentWeather() }
         binding.btnMenu.setOnClickListener {
             val isRtl = preferencesManager.getLanguage() == PreferencesManager.LANGUAGE_ARABIC
-            val drawerGravity = if (isRtl) GravityCompat.END else GravityCompat.START
-            (requireActivity() as MainActivity).drawerLayout.openDrawer(drawerGravity)
+            (requireActivity() as MainActivity).drawerLayout.openDrawer(
+                if (isRtl) GravityCompat.END else GravityCompat.START
+            )
         }
     }
 

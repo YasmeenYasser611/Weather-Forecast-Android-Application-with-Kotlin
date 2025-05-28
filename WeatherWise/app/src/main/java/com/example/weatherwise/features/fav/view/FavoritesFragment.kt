@@ -192,9 +192,7 @@ class FavoritesFragment : Fragment() {
             }
         }, 10000)
     }
-    private fun navigateToWeatherDetail(locationWithWeather: LocationWithWeather) {
-        // Implement navigation to weather detail
-    }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

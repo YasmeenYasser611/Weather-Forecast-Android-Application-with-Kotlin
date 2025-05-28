@@ -2,7 +2,6 @@ package com.example.weatherwise.features.main
 
 import android.content.Context
 import android.content.ContextWrapper
-import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
@@ -13,6 +12,9 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.example.weatherwise.R
@@ -20,6 +22,8 @@ import com.example.weatherwise.databinding.ActivityMainBinding
 import com.example.weatherwise.features.mainscreen.view.HomeFragment
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import com.example.weatherwise.features.settings.view.SettingsFragment
+import com.example.weatherwise.features.settings.viewmodel.SettingsViewModel
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
@@ -29,52 +33,74 @@ class MainActivity : AppCompatActivity() {
     private lateinit var preferencesManager: PreferencesManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+
         preferencesManager = PreferencesManager(this)
         setAppLocale(preferencesManager.getLanguageCode())
 
+        forceRtlIfArabic()
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        if (preferencesManager.getLanguage() == PreferencesManager.LANGUAGE_ARABIC) {
-            window.decorView.layoutDirection = View.LAYOUT_DIRECTION_RTL
-        } else {
-            window.decorView.layoutDirection = View.LAYOUT_DIRECTION_LTR
-        }
+        // Set layout direction for the entire activity
+        updateLayoutDirection()
 
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.fragment_container) as NavHostFragment
         navController = navHostFragment.navController
         drawerLayout = binding.drawerLayout
         setupNavigationDrawer()
+
+        // Observe settings changes
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                SettingsViewModel.SettingsEventBus.settingsChanged.collect {
+                    refreshActivityUI()
+                }
+            }
+        }
+    }
+
+    private fun forceRtlIfArabic() {
+        val isRtl = preferencesManager.getLanguage() == PreferencesManager.LANGUAGE_ARABIC
+        if (isRtl) {
+            window.decorView.layoutDirection = View.LAYOUT_DIRECTION_RTL
+        }
     }
 
     private fun setupNavigationDrawer() {
         val isRtl = preferencesManager.getLanguage() == PreferencesManager.LANGUAGE_ARABIC
-        val drawerGravity = if (isRtl) GravityCompat.END else GravityCompat.START
 
-        binding.drawerLayout.apply {
-            if (isRtl) {
-                setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED, GravityCompat.END)
-                setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED, GravityCompat.START)
-            } else {
-                setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED, GravityCompat.START)
-                setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED, GravityCompat.END)
-            }
+        // This is the key line - force the drawer to respect RTL
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            binding.drawerLayout.layoutDirection = if (isRtl) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
         }
 
-        val navViewLayoutParams = binding.navView.layoutParams as DrawerLayout.LayoutParams
-        navViewLayoutParams.gravity = drawerGravity
-        binding.navView.layoutParams = navViewLayoutParams
-
+        // Set navigation item selection
         binding.navView.setNavigationItemSelectedListener { menuItem ->
-            binding.drawerLayout.closeDrawer(drawerGravity)
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
             Handler(Looper.getMainLooper()).postDelayed({
                 handleNavigation(menuItem.itemId)
             }, 200)
             true
         }
+
+        // Inflate menu after setting direction
+        binding.navView.menu.clear()
+        binding.navView.inflateMenu(R.menu.nav_menu)
     }
+
+    fun updateLocale(languageCode: String) {
+        if (preferencesManager.getLanguageCode() == languageCode) return
+
+        preferencesManager.setLanguage(languageCode)
+        setAppLocale(languageCode)
+
+        // This is crucial - recreate the activity to properly apply RTL changes
+        recreate()
+    }
+
 
     private fun handleNavigation(menuItemId: Int) {
         try {
@@ -94,23 +120,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        return navController.navigateUp() || super.onSupportNavigateUp()
-    }
 
-
-
-
-
-    fun updateLocale(languageCode: String) {
-        if (preferencesManager.getLanguageCode() == languageCode) {
-            return
-        }
-
-        // Save the new language
-        preferencesManager.setLanguage(languageCode)
-
-        // Update locale
+    private fun setAppLocale(languageCode: String) {
         val locale = Locale(languageCode)
         Locale.setDefault(locale)
 
@@ -119,31 +130,29 @@ class MainActivity : AppCompatActivity() {
         config.setLocale(locale)
         resources.updateConfiguration(config, resources.displayMetrics)
 
-        // Update layout direction
-        window.decorView.layoutDirection = if (languageCode == "ar") {
-            View.LAYOUT_DIRECTION_RTL
-        } else {
-            View.LAYOUT_DIRECTION_LTR
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            createConfigurationContext(config)
         }
-
-        // Update navigation drawer direction
-        setupNavigationDrawer()
-
-        // Notify fragments to update their UI
-        notifyFragmentsOfLanguageChange()
-
-        // Refresh activity UI (e.g., toolbar, navigation drawer menu)
-        refreshActivityUI()
     }
 
-    private fun refreshActivityUI() {
+    private fun updateLayoutDirection() {
+        val isRtl = preferencesManager.getLanguage() == PreferencesManager.LANGUAGE_ARABIC
+        window.decorView.layoutDirection = if (isRtl) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+        // Update layout direction for the root view
+        binding.root.layoutDirection = if (isRtl) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+    }
+
+    fun refreshActivityUI() {
         // Update navigation drawer menu items
         binding.navView.menu.clear()
         binding.navView.inflateMenu(R.menu.nav_menu)
 
-        // Update any other activity-level UI elements (e.g., toolbar title)
-        // If you have a toolbar, update its title or other text
-        // Example: setSupportActionBar(binding.toolbar)
+        // Force navigation view to refresh its layout
+        binding.navView.invalidate()
+        binding.navView.requestLayout()
+
+        // Update drawer configuration
+        setupNavigationDrawer()
     }
 
     private fun notifyFragmentsOfLanguageChange() {
@@ -156,23 +165,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setAppLocale(languageCode: String) {
-        val locale = Locale(languageCode)
-        Locale.setDefault(locale)
-
-        val resources = resources
-        val config = Configuration(resources.configuration)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            config.setLocale(locale)
-            createConfigurationContext(config)
-        } else {
-            config.locale = locale
-            resources.updateConfiguration(config, resources.displayMetrics)
-        }
-
-        // Update resources for the entire app
-        resources.updateConfiguration(config, resources.displayMetrics)
+    override fun onSupportNavigateUp(): Boolean {
+        return navController.navigateUp() || super.onSupportNavigateUp()
     }
 
     override fun applyOverrideConfiguration(overrideConfiguration: Configuration?) {
@@ -183,7 +177,6 @@ class MainActivity : AppCompatActivity() {
         }
         super.applyOverrideConfiguration(overrideConfiguration)
     }
-
 
     override fun attachBaseContext(newBase: Context) {
         val preferencesManager = PreferencesManager(newBase)
@@ -204,5 +197,4 @@ class MainActivity : AppCompatActivity() {
 
         super.attachBaseContext(newContext)
     }
-
 }

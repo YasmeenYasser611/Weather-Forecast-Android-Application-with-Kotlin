@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.core.content.edit
 
-class PreferencesManager(context: Context) {
+class PreferencesManager(context: Context) : IPreferencesManager {
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("WeatherWisePrefs", Context.MODE_PRIVATE)
 
@@ -27,7 +27,6 @@ class PreferencesManager(context: Context) {
         const val LANGUAGE_ARABIC = "arabic"
     }
 
-
     private var lastKnownSettings: Map<String, Any> = getAllSettings()
 
     fun haveSettingsChanged(): Boolean {
@@ -37,13 +36,55 @@ class PreferencesManager(context: Context) {
         return changed
     }
 
-    // Location Method
-    fun setLocationMethod(method: String) {
+    override fun setLocationMethod(method: String) {
         sharedPreferences.edit { putString(KEY_LOCATION_METHOD, method) }
     }
 
+    override fun getLocationMethod(): String {
+        return sharedPreferences.getString("location_method", LOCATION_GPS) ?: LOCATION_GPS
+    }
 
-    // Temperature Unit
+    override fun getApiUnits(): String {
+        return when (getTemperatureUnit()) {
+            TEMP_CELSIUS -> "metric"
+            TEMP_FAHRENHEIT -> "imperial"
+            TEMP_KELVIN -> "standard"
+            else -> "metric"
+        }
+    }
+
+    override fun getLanguageCode(): String {
+        return sharedPreferences.getString(KEY_LANGUAGE, "en") ?: "en"
+    }
+
+    override fun getManualLocation(): Pair<Double, Double>? {
+        val lat = sharedPreferences.getString("manual_lat", null)?.toDoubleOrNull()
+        val lon = sharedPreferences.getString("manual_lon", null)?.toDoubleOrNull()
+        return if (lat != null && lon != null) Pair(lat, lon) else null
+    }
+
+    override fun getManualLocationWithAddress(): Triple<Double, Double, String>? {
+        val lat = sharedPreferences.getString("manual_lat", null)?.toDoubleOrNull()
+        val lon = sharedPreferences.getString("manual_lon", null)?.toDoubleOrNull()
+        val address = sharedPreferences.getString("manual_address", "") ?: ""
+        return if (lat != null && lon != null) Triple(lat, lon, address) else null
+    }
+
+    override fun setManualLocation(lat: Double, lon: Double, address: String) {
+        sharedPreferences.edit {
+            putString("manual_lat", lat.toString())
+            putString("manual_lon", lon.toString())
+            putString("manual_address", address)
+            apply()
+        }
+        Log.d("LocationDebug", "Address fetched: $address")
+    }
+
+    override fun hasTemperatureUnitChanged(newUnit: String): Boolean {
+        return getTemperatureUnit() != newUnit
+    }
+
+    // Other methods unchanged
     fun setTemperatureUnit(unit: String) {
         sharedPreferences.edit { putString(KEY_TEMPERATURE_UNIT, unit) }
     }
@@ -52,7 +93,6 @@ class PreferencesManager(context: Context) {
         return sharedPreferences.getString(KEY_TEMPERATURE_UNIT, TEMP_CELSIUS) ?: TEMP_CELSIUS
     }
 
-    // Wind Speed Unit
     fun setWindSpeedUnit(unit: String) {
         sharedPreferences.edit { putString(KEY_WIND_SPEED_UNIT, unit) }
     }
@@ -60,34 +100,6 @@ class PreferencesManager(context: Context) {
     fun getWindSpeedUnit(): String {
         return sharedPreferences.getString(KEY_WIND_SPEED_UNIT, WIND_METERS_PER_SEC) ?: WIND_METERS_PER_SEC
     }
-
-    // Language
-
-    // In PreferencesManager
-
-
-    fun getLanguage(): String {
-        val lang = sharedPreferences.getString(KEY_LANGUAGE, LANGUAGE_ENGLISH) ?: LANGUAGE_ENGLISH
-        Log.d("Localization", "Language retrieved: $lang")
-        return lang
-    }
-    fun setLanguage(languageCode: String) {
-        sharedPreferences.edit {
-            putString(KEY_LANGUAGE, languageCode)
-            apply() // Use apply() for async saving
-        }
-        Log.d("Localization", "Language saved: $languageCode")
-    }
-
-
-
-    fun getLanguageCode(): String {
-        return sharedPreferences.getString(KEY_LANGUAGE, "en") ?: "en"
-    }
-
-    // Notifications
-
-
 
     fun getTemperatureUnitSymbol(): String {
         return when (getTemperatureUnit()) {
@@ -106,92 +118,39 @@ class PreferencesManager(context: Context) {
         }
     }
 
-
-
-    // Method to check if units changed (for refresh optimization)
-    fun hasTemperatureUnitChanged(newUnit: String): Boolean {
-        return getTemperatureUnit() != newUnit
+    fun getLanguage(): String {
+        val lang = sharedPreferences.getString(KEY_LANGUAGE, LANGUAGE_ENGLISH) ?: LANGUAGE_ENGLISH
+        Log.d("Localization", "Language retrieved: $lang")
+        return lang
     }
 
-    // Method to get all settings as a bundle
-    fun getAllSettings(): Map<String, Any> {
-        return mapOf(
-            "location_method" to getLocationMethod(),
-            "temperature_unit" to getTemperatureUnit(),
-            "wind_speed_unit" to getWindSpeedUnit(),
-            "language" to getLanguage(),
-            "notifications_enabled" to areNotificationsEnabled()
-        )
-    }
-
-
-
-    fun getManualLocation(): Pair<Double, Double>? {
-        val lat = sharedPreferences.getString("manual_lat", null)?.toDoubleOrNull()
-        val lon = sharedPreferences.getString("manual_lon", null)?.toDoubleOrNull()
-        return if (lat != null && lon != null) Pair(lat, lon) else null
-    }
-
-    fun getLocationMethod(): String {
-        return sharedPreferences.getString("location_method", LOCATION_GPS) ?: LOCATION_GPS
-    }
-
-
-
-    // In PreferencesManager.kt
-    fun setManualLocation(lat: Double, lon: Double, address: String) {
-        sharedPreferences.edit().apply {
-            putString("manual_lat", lat.toString())
-            putString("manual_lon", lon.toString())
-            putString("manual_address", address)
-            apply() // Make sure to call apply() or commit()
+    fun setLanguage(languageCode: String) {
+        sharedPreferences.edit {
+            putString(KEY_LANGUAGE, languageCode)
+            apply()
         }
-
-        Log.d("LocationDebug", "Address fetched: $address")
+        Log.d("Localization", "Language saved: $languageCode")
     }
 
     fun getManualAddress(): String {
         return sharedPreferences.getString("manual_address", "") ?: ""
     }
 
-    fun getManualLocationWithAddress(): Triple<Double, Double, String>? {
-        val lat = sharedPreferences.getString("manual_lat", null)?.toDoubleOrNull()
-        val lon = sharedPreferences.getString("manual_lon", null)?.toDoubleOrNull()
-        val address = sharedPreferences.getString("manual_address", "") ?: ""
-
-        return if (lat != null && lon != null) Triple(lat, lon, address) else null
-    }
-
-    // In PreferencesManager.kt
     fun hasWindSpeedUnitChanged(newUnit: String): Boolean {
         return getWindSpeedUnit() != newUnit
     }
-
 
     fun hasLanguageChanged(newLanguage: String): Boolean {
         return getLanguage() != newLanguage
     }
 
-    // Ensure getApiUnits considers both temperature and wind speed units
-    fun getApiUnits(): String {
-        // For OpenWeatherMap, both temperature and wind speed use the same units parameter
-        return when (getTemperatureUnit()) {
-            TEMP_CELSIUS -> "metric" // m/s for wind, °C for temp
-            TEMP_FAHRENHEIT -> "imperial" // mph for wind, °F for temp
-            TEMP_KELVIN -> "standard" // m/s for wind, K for temp
-            else -> "metric"
-        }
-    }
-
     fun getApiWindSpeedUnit(): String {
-        // This method might be redundant since getApiUnits handles both
         return when (getWindSpeedUnit()) {
             WIND_METERS_PER_SEC -> "metric"
             WIND_MILES_PER_HOUR -> "imperial"
             else -> "metric"
         }
     }
-
 
     fun setNotificationsEnabled(enabled: Boolean) {
         sharedPreferences.edit { putBoolean(KEY_NOTIFICATIONS_ENABLED, enabled) }
@@ -201,4 +160,13 @@ class PreferencesManager(context: Context) {
         return sharedPreferences.getBoolean(KEY_NOTIFICATIONS_ENABLED, false)
     }
 
+    fun getAllSettings(): Map<String, Any> {
+        return mapOf(
+            "location_method" to getLocationMethod(),
+            "temperature_unit" to getTemperatureUnit(),
+            "wind_speed_unit" to getWindSpeedUnit(),
+            "language" to getLanguage(),
+            "notifications_enabled" to areNotificationsEnabled()
+        )
+    }
 }

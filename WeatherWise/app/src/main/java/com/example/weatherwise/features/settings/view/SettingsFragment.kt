@@ -191,9 +191,13 @@ class SettingsFragment : Fragment() {
             val toastText = if (language == "ar") "تم حفظ الإعدادات" else "Settings saved"
             Toast.makeText(requireContext(), toastText, Toast.LENGTH_SHORT).show()
 
+            // Notify MainActivity to refresh navigation drawer
+            (requireActivity() as MainActivity).refreshActivityUI()
+
             // Navigate back (optional, remove if you want to stay in settings)
             findNavController().navigateUp()
         }
+
         binding.rgLocationMethod.setOnCheckedChangeListener { _, checkedId ->
             val locationMethod = when (checkedId) {
                 R.id.rb_manual -> PreferencesManager.LOCATION_MANUAL

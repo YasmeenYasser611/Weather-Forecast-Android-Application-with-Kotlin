@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">الطقس الحكيم</string>
     <string name="hello_blank_fragment">مرحبًا، جزء فارغ</string>
-    <string name="settings">الإعدادات</string>
+
     <string name="location_settings">إعدادات الموقع</string>
     <string name="use_gps_location">استخدام موقع GPS</string>
     <string name="select_location_manually">اختيار الموقع يدويًا</string>
@@ -20,7 +20,7 @@
     <string name="save_settings">حفظ الإعدادات</string>
     <string name="notifications_settings">الإشعارات</string>
     <string name="enable_notifications">تفعيل الإشعارات</string>
-    <string name="favorites">المفضلة</string>
+
     <string name="no_favorites">ليس لديك أي مواقع مفضلة بعد</string>
     <string name="no_favorites_description">لا توجد مفضلة</string>
     <string name="add_first_favorite">أضف موقعك المفضل الأول</string>
@@ -33,8 +33,6 @@
     <string name="no_alerts_description">لا توجد تنبيهات</string>
     <string name="add_first_alert">أضف تنبيهك الأول</string>
     <string name="add_alert_description">إضافة تنبيه</string>
-    <string name="turn_off">إيقاف</string>
-    <string name="turn_on">تشغيل</string>
     <string name="alert_type">نوع التنبيه</string>
     <string name="start_time">وقت البدء</string>
     <string name="end_time">وقت الانتهاء</string>
@@ -95,8 +93,7 @@
     <string name="enter_location_to_search">أدخل موقعًا للبحث</string>
     <string name="back">رجوع</string>
     <string name="save_location">حفظ الموقع</string>
-    <string name="dismiss">رفض</string>
-    <string name="dismiss_description">رفض التنبيه</string>
+
 
     <string name="alert_type_description">اختر نوع التنبيه</string>
     <string name="start_time_description">اختر وقت البدء</string>
@@ -108,17 +105,33 @@
     <string name="delete">حذف</string>
     <string name="delete_description">حذف الإجراء</string>
 
-    <string name="home">الرئيسية</string>
+
     <string name="map">الخريطة</string>
     <string name="favorite_details">تفاصيل المفضلة</string>
     <string name="navigation_drawer_description">فتح قائمة التنقل</string>
-    <string name="alarms">التنبيهات</string>
+
 
     <string name="weather_icon_description">أيقونة حالة الطقس</string>
     <string name="high_low_temperature_format">الأعلى: %1$d° الأدنى: %2$d°</string>
 
     <string name="alarm_instructions"> </string>
     <string name="remove_favorite_description">إزالة المفضلة</string>
-    <string name="delete_alert"> إزالة الإشعار </string>
+
+    <string name="home">الرئيسية</string>
+    <string name="favorites">المفضلة</string>
+    <string name="alarms">المنبهات</string>
+    <string name="settings">الإعدادات</string>
+
+    <string name="rain_alert">تنبيه المطر</string>
+    <string name="active_until_8am">نشط حتى الساعة 8:00 صباحًا</string>
+    <string name="notify_rain_detected">إشعار عند اكتشاف المطر في منطقتك</string>
+    <string name="delete_alert">حذف التنبيه</string>
+
+
+    <string name="dismiss">إغلاق</string>
+    <string name="dismiss_description">إغلاق التنبيه</string>
+    <string name="long_press_hint">اضغط مطولاً لفتح التطبيق</string>
+
+    <string name="turn_off">إيقاف</string>
 
 </resources>

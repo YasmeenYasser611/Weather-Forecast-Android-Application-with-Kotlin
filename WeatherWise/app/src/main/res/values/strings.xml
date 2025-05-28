@@ -121,6 +121,13 @@
 
     <string name="alarm_instructions">Long-press notification to open app</string>
 
+
+    <string name="long_press_hint">Long-press to open app</string>
+
+    <string name="rain_alert">Rain Alert</string>
+    <string name="active_until_8am">Active until 8:00 AM</string>
+    <string name="notify_rain_detected">Notify when rain is detected in your area</string>
     <string name="delete_alert">Delete alert</string>
+
 
 </resources>

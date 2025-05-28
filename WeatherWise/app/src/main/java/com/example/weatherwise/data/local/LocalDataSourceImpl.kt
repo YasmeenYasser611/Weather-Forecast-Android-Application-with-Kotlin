@@ -139,7 +139,7 @@ class LocalDataSourceImpl(private val weatherDao: WeatherDao) : ILocalDataSource
     }
 
     override suspend fun getActiveAlerts(currentTime: Long): List<WeatherAlert> {
-         return weatherDao.getActiveAlerts(currentTime)
+        return weatherDao.getActiveAlerts(currentTime)
 
     }
 

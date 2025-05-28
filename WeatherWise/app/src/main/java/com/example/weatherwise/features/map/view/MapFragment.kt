@@ -93,12 +93,6 @@ class MapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.btnSaveLocation.text = if (arguments?.getBoolean("for_favorite") == true) {
-            "Save as Favorite"
-        } else {
-            "Save Location"
-        }
-
         setupSearch()
         setupRecyclerView()
         setupMap()

@@ -26,6 +26,3 @@ data class CurrentWeatherResponse(
     val name: String,
     val cod: Int
 )
-
-
-

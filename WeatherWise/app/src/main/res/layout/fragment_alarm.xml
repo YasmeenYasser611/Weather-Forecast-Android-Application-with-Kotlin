@@ -13,14 +13,17 @@
         android:orientation="vertical"
         android:gravity="center"
         android:paddingTop="24dp"
-        android:paddingBottom="16dp">
+        android:paddingBottom="16dp"
+        android:layoutDirection="locale">
 
         <ImageView
             android:id="@+id/iv_alarm_icon"
             android:layout_width="64dp"
             android:layout_height="64dp"
             android:src="@drawable/ic_alarm"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp"
+            android:layoutDirection="locale"/>
+
         <TextView
             android:id="@+id/tv_alert_title"
             android:layout_width="wrap_content"
@@ -29,7 +32,9 @@
             android:textSize="20sp"
             android:textStyle="bold"
             android:paddingHorizontal="12dp"
-            android:paddingVertical="8dp"/>
+            android:paddingVertical="8dp"
+            android:textDirection="locale"
+            android:gravity="center"/>
 
         <Button
             android:id="@+id/button_dismiss"
@@ -43,16 +48,20 @@
             android:textAllCaps="false"
             android:paddingHorizontal="16dp"
             android:paddingVertical="12dp"
-            android:elevation="4dp"/>
+            android:elevation="4dp"
+            android:textDirection="locale"
+            android:layoutDirection="locale"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Long-press to open app"
-            android:textColor="@android:color/white"
-            android:textSize="14sp"
-            android:alpha="0.8"
-            android:paddingBottom="8dp"/>
+            android:text="@string/long_press_hint"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        android:alpha="0.8"
+        android:paddingBottom="8dp"
+        android:textDirection="locale"
+        android:gravity="center"/>
     </LinearLayout>
 </FrameLayout>
