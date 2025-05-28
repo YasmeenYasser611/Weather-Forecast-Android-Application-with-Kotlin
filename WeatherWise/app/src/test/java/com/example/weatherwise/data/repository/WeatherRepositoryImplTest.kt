@@ -120,12 +120,30 @@ class WeatherRepositoryImplTest {
   assertThat(fetched?.id, `is`("alert1"))
  }
 
-// @Test
-// fun getAllAlerts_returnsLiveData() {
-//  val alert = WeatherAlert("alert2", "Flood warning", 1685290000, "", "loc1" , true)
-//  localDataSource.saveAlert(alert)
-//  val alertsLiveData = repository.getAllAlerts() as MutableLiveData<List<WeatherAlert>>
-//
-//  assertThat(alertsLiveData.value?.first()?.id, `is`("alert2"))
-// }
+
+@Test
+fun saveMultipleAlertsAndFetchAll_returnsAllAlerts() = runTest {
+ val alert1 = WeatherAlert("alertA", "Heat warning", 1686000000, "", "loc1", true)
+ val alert2 = WeatherAlert("alertB", "Rain warning", 1686000001, "", "loc1", true)
+
+ repository.saveAlert(alert1)
+ repository.saveAlert(alert2)
+
+ val alertsLiveData = repository.getAllAlerts() as MutableLiveData<List<WeatherAlert>>
+ val alerts = alertsLiveData.value ?: emptyList()
+
+ assertThat(alerts.size, `is`(2))
+ assertThat(alerts.any { it.id == "alertA" }, `is`(true))
+ assertThat(alerts.any { it.id == "alertB" }, `is`(true))
+}
+
+ @Test
+ fun getCurrentLocationWithWeather_withoutNetworkRefresh_returnsCachedData() = runTest {
+  repository.setCurrentLocation(30.0, 31.0)
+  // Simulate no network refresh
+  val result = repository.getCurrentLocationWithWeather(false, false)
+
+  assertThat(result?.location?.name, `is`("Cairo"))
+ }
+
 }
