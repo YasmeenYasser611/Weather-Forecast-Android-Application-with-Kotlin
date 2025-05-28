@@ -1,22 +1,36 @@
 package com.example.weatherwise.data.repository
 
 import com.example.weatherwise.features.settings.model.IPreferencesManager
-import com.example.weatherwise.features.settings.model.PreferencesManager
 
 class FakePreferencesManager : IPreferencesManager {
-    private var locationMethod: String = PreferencesManager.LOCATION_GPS
+    private var locationMethod = "gps"
     private var manualLocation: Triple<Double, Double, String>? = null
-    private var units: String = "metric"
-    private var language: String = "en"
-    private var temperatureUnitChanged: Boolean = false
+    private var temperatureUnit = "celsius"
+    private var languageCode = "en"
 
-    override fun getLocationMethod(): String = locationMethod
     override fun setLocationMethod(method: String) {
         locationMethod = method
     }
 
+    override fun getLocationMethod(): String {
+        return locationMethod
+    }
+
+    override fun getApiUnits(): String {
+        return when (temperatureUnit) {
+            "celsius" -> "metric"
+            "fahrenheit" -> "imperial"
+            "kelvin" -> "standard"
+            else -> "metric"
+        }
+    }
+
+    override fun getLanguageCode(): String {
+        return languageCode
+    }
+
     override fun getManualLocation(): Pair<Double, Double>? {
-        return manualLocation?.let { it.first to it.second }
+        return manualLocation?.let { Pair(it.first, it.second) }
     }
 
     override fun getManualLocationWithAddress(): Triple<Double, Double, String>? {
@@ -27,21 +41,16 @@ class FakePreferencesManager : IPreferencesManager {
         manualLocation = Triple(lat, lon, address)
     }
 
-    override fun getApiUnits(): String = units
-     fun setApiUnits(units: String) {
-        this.units = units
+    override fun hasTemperatureUnitChanged(newUnit: String): Boolean {
+        return temperatureUnit != newUnit
     }
 
-    override fun getLanguageCode(): String = language
-     fun setLanguageCode(language: String) {
-        this.language = language
+    // Helper methods for testing
+    fun setTemperatureUnit(unit: String) {
+        temperatureUnit = unit
     }
 
-    override fun hasTemperatureUnitChanged(currentUnit: String): Boolean {
-        return temperatureUnitChanged
-    }
-
-    fun setTemperatureUnitChanged(changed: Boolean) {
-        temperatureUnitChanged = changed
+    fun setLanguageCode(code: String) {
+        languageCode = code
     }
 }

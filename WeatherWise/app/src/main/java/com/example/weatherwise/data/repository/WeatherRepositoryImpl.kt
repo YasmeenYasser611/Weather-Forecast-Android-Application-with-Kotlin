@@ -11,12 +11,13 @@ import com.example.weatherwise.data.model.response.CurrentWeatherResponse
 import com.example.weatherwise.data.model.response.GeocodingResponse
 import com.example.weatherwise.data.model.response.WeatherResponse
 import com.example.weatherwise.data.remote.IWeatherRemoteDataSource
+import com.example.weatherwise.features.settings.model.IPreferencesManager
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
-class WeatherRepositoryImpl private constructor(private val remoteDataSource: IWeatherRemoteDataSource, private val localDataSource: ILocalDataSource, private val preferencesManager: PreferencesManager) : IWeatherRepository
+class WeatherRepositoryImpl (private val remoteDataSource: IWeatherRemoteDataSource, private val localDataSource: ILocalDataSource, private val preferencesManager: IPreferencesManager) : IWeatherRepository
 {
 
     companion object {
@@ -25,7 +26,7 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
         private const val TAG = "WeatherRepository"
         private const val STALE_DATA_THRESHOLD = 24 * 60 * 60 * 1000L // 24 hours
 
-        fun getInstance(remoteDataSource: IWeatherRemoteDataSource, localDataSource: ILocalDataSource, preferencesManager: PreferencesManager): WeatherRepositoryImpl
+        fun getInstance(remoteDataSource: IWeatherRemoteDataSource, localDataSource: ILocalDataSource, preferencesManager: IPreferencesManager): WeatherRepositoryImpl
         {
             return instance ?: synchronized(this) {
                 val temp = WeatherRepositoryImpl(remoteDataSource, localDataSource, preferencesManager)
@@ -50,16 +51,16 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
             preferencesManager.getManualLocationWithAddress()?.let { (_, _, address) ->
                 if (address.isNotEmpty()) {
                     localDataSource.updateLocationName(locationId, address)
-                    Log.d(TAG, "Updated location name to $address for ID: $locationId")
+//                    Log.d(TAG, "Updated location name to $address for ID: $locationId")
                 }
             }
         }
     }
     private suspend fun getOrCreateLocationId(lat: Double, lon: Double, isCurrent: Boolean = false, isFavorite: Boolean = false): String {
-        Log.d(TAG, "Looking for location at ($lat, $lon)")
+//        Log.d(TAG, "Looking for location at ($lat, $lon)")
         val existing = localDataSource.findLocationByCoordinates(lat, lon)
         return if (existing != null) {
-            Log.d(TAG, "Found existing location: ${existing.id}")
+//            Log.d(TAG, "Found existing location: ${existing.id}")
             if (isCurrent && !existing.isCurrent) {
                 localDataSource.setCurrentLocation(existing.id)
             }
@@ -76,7 +77,7 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
                 isCurrent = isCurrent,
                 isFavorite = isFavorite
             )
-            Log.d(TAG, "Creating new location: ${newLocation.id}")
+//            Log.d(TAG, "Creating new location: ${newLocation.id}")
             localDataSource.saveLocation(newLocation)
             newLocation.id
         }
@@ -101,7 +102,7 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
             }
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Fetch failed, using cached data", e)
+//            Log.e(TAG, "Fetch failed, using cached data", e)
             false
         }
     }
@@ -134,16 +135,16 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
                     localDataSource.getLocation(locationId)?.longitude ?: 0.0
                 )
                 if (!success && forceRefresh) {
-                    Log.w(TAG, "Force refresh failed, using cached data")
+//                    Log.w(TAG, "Force refresh failed, using cached data")
                 }
             }
 
             // Always fall back to local data
             localDataSource.getLocationWithWeather(locationId)?.also {
-                Log.d(TAG, "Returning ${if (isNetworkAvailable) "network" else "cached"} data")
+//                Log.d(TAG, "Returning ${if (isNetworkAvailable) "network" else "cached"} data")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting weather data", e)
+//            Log.e(TAG, "Error getting weather data", e)
             null
         }
     }
@@ -161,7 +162,7 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
                         fetchAndSaveWeatherData(locationId, location.latitude, location.longitude)
                     }
                 } catch (e: Exception) {
-                    Log.w(TAG, "Network operation failed, falling back to local data", e)
+//                    Log.w(TAG, "Network operation failed, falling back to local data", e)
                     // Continue with local data
                 }
             }
@@ -169,11 +170,11 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
             // Always return whatever local data we have
             localDataSource.getLocationWithWeather(locationId)?.also {
                 if (!isNetworkAvailable) {
-                    Log.d(TAG, "Returning cached data (offline mode) for $locationId")
+//                    Log.d(TAG, "Returning cached data (offline mode) for $locationId")
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error in fetchLocationWithWeather", e)
+//            Log.e(TAG, "Error in fetchLocationWithWeather", e)
             null
         }
     }
@@ -196,14 +197,14 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
     override suspend fun addFavoriteLocation(lat: Double, lon: Double, name: String): Boolean {
         return try {
             val locationId = getOrCreateLocationId(lat, lon, isFavorite = true)
-            Log.d(TAG, "Setting favorite status for $locationId")
+//            Log.d(TAG, "Setting favorite status for $locationId")
             localDataSource.setFavoriteStatus(locationId, true)
             localDataSource.updateLocationName(locationId, name)
             localDataSource.updateLocationAddress(locationId, name)
             fetchAndSaveWeatherData(locationId, lat, lon)
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Error adding favorite", e)
+//            Log.e(TAG, "Error adding favorite", e)
             false
         }
     }
@@ -224,7 +225,7 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
             fetchAndSaveWeatherData(locationId, location.latitude, location.longitude)
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Error refreshing location", e)
+//            Log.e(TAG, "Error refreshing location", e)
             false
         }
     }
@@ -253,7 +254,7 @@ class WeatherRepositoryImpl private constructor(private val remoteDataSource: IW
         preferencesManager.setManualLocation(lat, lon, address)
         val locationId = getOrCreateLocationId(lat, lon, isCurrent = true)
         localDataSource.updateLocationName(locationId, address)
-        Log.d(TAG, "Set manual location: $address, ID: $locationId")
+//        Log.d(TAG, "Set manual location: $address, ID: $locationId")
         fetchAndSaveWeatherData(locationId, lat, lon)
     }
 
