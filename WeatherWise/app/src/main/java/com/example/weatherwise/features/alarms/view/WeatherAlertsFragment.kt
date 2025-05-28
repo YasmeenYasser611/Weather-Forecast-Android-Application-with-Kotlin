@@ -1,6 +1,5 @@
 package com.example.weatherwise.features.alarms.view
 
-
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlarmManager
@@ -11,6 +10,7 @@ import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -19,9 +19,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -38,7 +39,6 @@ import com.example.weatherwise.databinding.FragmentAlarmsBinding
 import com.example.weatherwise.features.alarms.viewmodel.WeatherAlertViewModel
 import com.example.weatherwise.features.alarms.viewmodel.WeatherAlertViewModelFactory
 import com.example.weatherwise.features.alarms.worker.AlarmReceiver
-import com.example.weatherwise.features.alarms.worker.AlertWorker
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import com.google.android.material.snackbar.Snackbar
 import java.text.SimpleDateFormat
@@ -54,6 +54,17 @@ class WeatherAlertsFragment : Fragment() {
     private lateinit var adapter: WeatherAlertsAdapter
     private var addAlertDialog: AlertDialog? = null
 
+    // Activity result launcher for overlay permission
+    private val requestOverlayPermission = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && !Settings.canDrawOverlays(requireContext())) {
+            Snackbar.make(
+                binding.snackbarAnchor,
+                "Overlay permission is required for alert dialogs",
+                Snackbar.LENGTH_LONG
+            ).show()
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -66,54 +77,49 @@ class WeatherAlertsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Initialize dependencies
         preferencesManager = PreferencesManager(requireContext())
-        viewModel = ViewModelProvider(this, WeatherAlertViewModelFactory(
-            WeatherRepositoryImpl.getInstance(
-                WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
-                LocalDataSourceImpl(LocalDatabase.getInstance(requireContext()).weatherDao()),
-                preferencesManager
+        viewModel = ViewModelProvider(
+            this,
+            WeatherAlertViewModelFactory(
+                WeatherRepositoryImpl.getInstance(
+                    WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
+                    LocalDataSourceImpl(LocalDatabase.getInstance(requireContext()).weatherDao()),
+                    preferencesManager
+                )
             )
-        )).get(WeatherAlertViewModel::class.java)
+        ).get(WeatherAlertViewModel::class.java)
 
         setupUI()
         setupObservers()
         checkNotificationPermission()
-
-        // Start periodic alert checks
-        AlertWorker.schedulePeriodicCheck(requireContext())
     }
 
     private fun setupUI() {
-        // Setup RecyclerView
         adapter = WeatherAlertsAdapter(
             onToggle = { alert ->
                 viewModel.updateAlert(alert.copy(isActive = !alert.isActive))
-                if (!alert.isActive && alert.notificationType == "ALARM") {
+                if (!alert.isActive) {
                     cancelAlarm(alert.id)
+                } else {
+                    scheduleAlarmIfNeeded(alert)
                 }
             },
             onDelete = { alert ->
-                if (alert.notificationType == "ALARM") {
-                    cancelAlarm(alert.id)
-                }
+                cancelAlarm(alert.id)
                 showDeleteConfirmation(alert)
             }
         )
         binding.rvActiveAlerts.adapter = adapter
         binding.rvActiveAlerts.layoutManager = LinearLayoutManager(requireContext())
 
-        // Back button
         binding.btnBack.setOnClickListener {
             findNavController().popBackStack()
         }
 
-        // Add Alert FAB
         binding.fabAddAlert.setOnClickListener {
             showAddAlertDialog()
         }
 
-        // Empty state button
         binding.btnAddFirstAlert.setOnClickListener {
             showAddAlertDialog()
         }
@@ -140,9 +146,8 @@ class WeatherAlertsFragment : Fragment() {
 
         viewModel.alertsUpdated.observe(viewLifecycleOwner) { updated ->
             if (updated) {
-                // Reschedule alarms if needed
                 viewModel.alerts.value?.forEach { alert ->
-                    if (alert.notificationType == "ALARM" && alert.isActive) {
+                    if (alert.isActive) {
                         scheduleAlarmIfNeeded(alert)
                     }
                 }
@@ -153,19 +158,19 @@ class WeatherAlertsFragment : Fragment() {
 
     private fun checkNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
+            if (!NotificationManagerCompat.from(requireContext()).areNotificationsEnabled()) {
+                showNotificationPermissionRationale()
+            } else if (ContextCompat.checkSelfPermission(
                     requireContext(),
                     Manifest.permission.POST_NOTIFICATIONS
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-                // Permission not granted, check if we should show rationale
-                if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
-                    showNotificationPermissionRationale()
-                } else {
-                    // Directly request the permission
-                    requestNotificationPermission()
-                }
+                requestNotificationPermission()
             }
+        }
+        // Check overlay permission for pre-Android 10
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && !Settings.canDrawOverlays(requireContext())) {
+            requestOverlayPermission()
         }
     }
 
@@ -173,8 +178,11 @@ class WeatherAlertsFragment : Fragment() {
         AlertDialog.Builder(requireContext())
             .setTitle("Notification Permission Needed")
             .setMessage("This app needs notification permission to alert you about weather changes.")
-            .setPositiveButton("OK") { _, _ ->
-                requestNotificationPermission()
+            .setPositiveButton("Go to Settings") { _, _ ->
+                val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, requireContext().packageName)
+                }
+                startActivity(intent)
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -189,6 +197,13 @@ class WeatherAlertsFragment : Fragment() {
         }
     }
 
+    private fun requestOverlayPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${requireContext().packageName}"))
+            requestOverlayPermission.launch(intent)
+        }
+    }
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -196,9 +211,7 @@ class WeatherAlertsFragment : Fragment() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE) {
-            val granted = grantResults.isNotEmpty() &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED
-            if (!granted) {
+            if (grantResults.isNotEmpty() && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                 Snackbar.make(
                     binding.snackbarAnchor,
                     "Notifications disabled - permission denied",
@@ -209,29 +222,27 @@ class WeatherAlertsFragment : Fragment() {
     }
 
     private fun showAddAlertDialog() {
-        // First check if notifications are enabled in preferences
         if (!preferencesManager.areNotificationsEnabled()) {
             showEnableNotificationsDialog()
             return
         }
 
-        // Check permission for Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
+            !NotificationManagerCompat.from(requireContext()).areNotificationsEnabled()
         ) {
             showNotificationPermissionRationale()
             return
         }
 
-        // Inflate the dialog layout
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && !Settings.canDrawOverlays(requireContext())) {
+            requestOverlayPermission()
+            return
+        }
+
         val dialogView = LayoutInflater.from(requireContext())
             .inflate(R.layout.dialog_add_alert, null)
         val dialogBinding = DialogAddAlertBinding.bind(dialogView)
 
-        // Setup alert type dropdown
         val alertTypes = resources.getStringArray(R.array.alert_types)
         val alertTypeAdapter = ArrayAdapter(
             requireContext(),
@@ -240,28 +251,17 @@ class WeatherAlertsFragment : Fragment() {
         )
         dialogBinding.actvAlertType.setAdapter(alertTypeAdapter)
 
-        // Setup time pickers
         val calendar = Calendar.getInstance()
         dialogBinding.etStartTime.setOnClickListener {
-            showDateTimePicker(true) { dateTime ->
+            showDateTimePicker { dateTime ->
                 calendar.timeInMillis = dateTime
                 dialogBinding.etStartTime.setText(
-                    SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
-                        .format(Date(dateTime)))
-            }
-        }
-
-        dialogBinding.etEndTime.setOnClickListener {
-            showDateTimePicker(false) { dateTime ->
-                calendar.timeInMillis = dateTime
-                dialogBinding.etEndTime.setText(
                     SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
                         .format(Date(dateTime))
                 )
             }
         }
 
-        // Setup notification type radio group
         dialogBinding.rgNotificationType.setOnCheckedChangeListener { _, checkedId ->
             dialogBinding.tilCustomSound.visibility = when (checkedId) {
                 R.id.rb_alarm_sound -> View.VISIBLE
@@ -269,12 +269,11 @@ class WeatherAlertsFragment : Fragment() {
             }
         }
 
-        // Setup custom sound picker
-        dialogBinding.etCustomSound.setOnClickListener {
-            // Implement sound picker intent here
-        }
+        // Placeholder for custom sound picker
+//        dialogBinding.etCustomSound.setOnClickListener {
+//            // Implement sound picker intent here, e.g., using ActivityResultContracts
+//        }
 
-        // Build and show the dialog
         addAlertDialog = AlertDialog.Builder(requireContext())
             .setTitle("Add Weather Alert")
             .setView(dialogView)
@@ -285,7 +284,7 @@ class WeatherAlertsFragment : Fragment() {
             .show()
     }
 
-    private fun showDateTimePicker(isStartTime: Boolean, callback: (Long) -> Unit) {
+    private fun showDateTimePicker(callback: (Long) -> Unit) {
         val calendar = Calendar.getInstance()
         DatePickerDialog(
             requireContext(),
@@ -343,17 +342,15 @@ class WeatherAlertsFragment : Fragment() {
     private fun saveAlert(dialogBinding: DialogAddAlertBinding) {
         val alertType = dialogBinding.actvAlertType.text.toString()
         val startTimeText = dialogBinding.etStartTime.text.toString()
-        val endTimeText = dialogBinding.etEndTime.text.toString()
         val notificationType = when (dialogBinding.rgNotificationType.checkedRadioButtonId) {
             R.id.rb_silent_notification -> "SILENT"
             R.id.rb_sound_notification -> "SOUND"
             R.id.rb_alarm_sound -> "ALARM"
             else -> "SILENT"
         }
-        val customSoundUri = dialogBinding.etCustomSound.text?.toString()
+//        val customSoundUri = dialogBinding.etCustomSound.text?.toString()
 
-        // Validate inputs
-        if (alertType.isBlank() || startTimeText.isBlank() || endTimeText.isBlank()) {
+        if (alertType.isBlank() || startTimeText.isBlank()) {
             Snackbar.make(binding.snackbarAnchor, "Please fill all fields", Snackbar.LENGTH_LONG).show()
             return
         }
@@ -361,11 +358,9 @@ class WeatherAlertsFragment : Fragment() {
         try {
             val startTime = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
                 .parse(startTimeText)?.time ?: 0
-            val endTime = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
-                .parse(endTimeText)?.time ?: 0
 
-            if (startTime >= endTime) {
-                Snackbar.make(binding.snackbarAnchor, "End time must be after start time", Snackbar.LENGTH_LONG).show()
+            if (startTime < System.currentTimeMillis()) {
+                Snackbar.make(binding.snackbarAnchor, "Start time must be in the future", Snackbar.LENGTH_LONG).show()
                 return
             }
 
@@ -373,18 +368,12 @@ class WeatherAlertsFragment : Fragment() {
                 id = generateAlertId(alertType, startTime),
                 type = alertType,
                 startTime = startTime,
-                endTime = endTime,
                 notificationType = notificationType,
-                customSoundUri = customSoundUri,
                 isActive = true
             )
 
             viewModel.addAlert(newAlert)
-
-            // If it's an alarm type, schedule it immediately
-            if (notificationType == "ALARM") {
-                scheduleAlarmIfNeeded(newAlert)
-            }
+            scheduleAlarmIfNeeded(newAlert)
 
         } catch (e: Exception) {
             Snackbar.make(binding.snackbarAnchor, "Invalid date format", Snackbar.LENGTH_LONG).show()
@@ -395,19 +384,17 @@ class WeatherAlertsFragment : Fragment() {
         return "${alertType}_${startTime}"
     }
 
-
     @SuppressLint("ScheduleExactAlarm")
     private fun scheduleAlarmIfNeeded(alert: WeatherAlert) {
-        if (alert.notificationType == "ALARM" && alert.isActive) {
+        if (alert.isActive) {
             val alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val intent = Intent(requireContext(), AlarmReceiver::class.java).apply {
                 putExtra("alert_id", alert.id)
                 putExtra("alert_type", alert.type)
-                putExtra("end_time", alert.endTime)
                 putExtra("notification_type", alert.notificationType)
             }
 
-            Log.d("WeatherAlertsFragment", "Scheduling alarm for alert: ${alert.id}, notification_type: ${alert.notificationType}")
+            Log.d("WeatherAlertsFragment", "Scheduling alert: ${alert.id}, type: ${alert.notificationType}, sound: ${alert.customSoundUri}")
 
             val pendingIntent = PendingIntent.getBroadcast(
                 requireContext(),
@@ -415,6 +402,20 @@ class WeatherAlertsFragment : Fragment() {
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                !alarmManager.canScheduleExactAlarms()
+            ) {
+                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                Snackbar.make(
+                    binding.snackbarAnchor,
+                    "Please allow exact alarms for accurate notifications",
+                    Snackbar.LENGTH_LONG
+                ).show()
+                return
+            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setExactAndAllowWhileIdle(
@@ -429,7 +430,7 @@ class WeatherAlertsFragment : Fragment() {
                     pendingIntent
                 )
             }
-            Log.d("WeatherAlertsFragment", "Scheduled alarm for alert: ${alert.id}")
+            Log.d("WeatherAlertsFragment", "Scheduled alert: ${alert.id}")
         }
     }
 

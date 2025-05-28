@@ -9,17 +9,19 @@ import android.content.Context
 import android.content.Intent
 import android.media.MediaPlayer
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.weatherwise.R
+
 class AlarmService : Service() {
     private var mediaPlayer: MediaPlayer? = null
 
     companion object {
         const val ALARM_CHANNEL_ID = "weather_alerts_alarm"
-        const val ALARM_CHANNEL_NAME = "Weather Alarm Alerts"
+        const val ALARM_CHANNEL_NAME = "Weather Alerts"
 
         fun createNotificationChannel(context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -28,14 +30,13 @@ class AlarmService : Service() {
                     ALARM_CHANNEL_NAME,
                     NotificationManager.IMPORTANCE_HIGH
                 ).apply {
-                    description = "Channel for weather alarm alerts"
-                    setSound(null, null) // We'll handle sound separately with MediaPlayer
+                    description = "Channel for weather alerts"
+                    setSound(null, null) // Sound handled by MediaPlayer
                     enableVibration(true)
                     lockscreenVisibility = Notification.VISIBILITY_PUBLIC
                 }
-
-                val notificationManager = context.getSystemService(NotificationManager::class.java)
-                notificationManager.createNotificationChannel(channel)
+                (context.getSystemService(NotificationManager::class.java))
+                    .createNotificationChannel(channel)
             }
         }
     }
@@ -47,11 +48,14 @@ class AlarmService : Service() {
 
     @SuppressLint("ForegroundServiceType")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Create notification to keep service running
+        val alertType = intent?.getStringExtra("alert_type") ?: "Weather Alert"
+        val notificationType = intent?.getStringExtra("notification_type")?.uppercase() ?: "ALARM"
+        val customSoundUri = intent?.getStringExtra("custom_sound_uri")
+
         val notification = NotificationCompat.Builder(this, ALARM_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notifications_active)
-            .setContentTitle("Weather Alarm Active")
-            .setContentText("Tap to dismiss the alarm")
+            .setContentTitle("Weather $notificationType: $alertType")
+            .setContentText("Tap to view or dismiss the alert")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -59,21 +63,55 @@ class AlarmService : Service() {
             .setAutoCancel(true)
             .build()
 
-        // Start as foreground service
         startForeground(1, notification)
 
-        // Play alarm sound
-        try {
-            mediaPlayer = MediaPlayer.create(this, R.raw.alarm).apply {
-                isLooping = true
-                start()
-            }
-        } catch (e: Exception) {
-            Log.e("AlarmService", "Error playing custom alarm sound", e)
-            // Fallback to default alarm sound if custom sound fails
-            mediaPlayer = MediaPlayer.create(this, android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI).apply {
-                isLooping = true
-                start()
+        // Play sound based on notification type
+        if (notificationType == "ALARM" || notificationType == "SOUND") {
+            try {
+                when (notificationType) {
+                    "ALARM" -> {
+                        mediaPlayer = MediaPlayer.create(this, R.raw.alarm)
+                        if (mediaPlayer == null) {
+                            Log.e("AlarmService", "Failed to create MediaPlayer for R.raw.alarm")
+                            throw Exception("MediaPlayer creation failed for ALARM")
+                        }
+                        mediaPlayer?.isLooping = true
+                        mediaPlayer?.start()
+                        Log.d("AlarmService", "Playing alarm.mp3 for ALARM notification")
+                    }
+                    "SOUND" -> {
+                        val soundUri = try {
+                            if (!customSoundUri.isNullOrBlank()) {
+                                Uri.parse(customSoundUri).takeIf { isValidUri(it, this) }
+                                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                            } else {
+                                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                            }
+                        } catch (e: Exception) {
+                            Log.e("AlarmService", "Invalid customSoundUri: $customSoundUri", e)
+                            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                        }
+                        mediaPlayer = MediaPlayer.create(this, soundUri)
+                        if (mediaPlayer == null) {
+                            Log.e("AlarmService", "Failed to create MediaPlayer for soundUri: $soundUri")
+                            throw Exception("MediaPlayer creation failed for SOUND")
+                        }
+                        mediaPlayer?.isLooping = false
+                        mediaPlayer?.start()
+                        Log.d("AlarmService", "Playing sound for SOUND notification with URI: $soundUri")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("AlarmService", "Error playing sound for $notificationType", e)
+                // Fallback to default notification sound
+                try {
+                    mediaPlayer = MediaPlayer.create(this, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
+                    mediaPlayer?.isLooping = notificationType == "ALARM"
+                    mediaPlayer?.start()
+                    Log.d("AlarmService", "Fallback to default notification sound for $notificationType")
+                } catch (fallbackError: Exception) {
+                    Log.e("AlarmService", "Fallback sound playback failed", fallbackError)
+                }
             }
         }
 
@@ -81,12 +119,26 @@ class AlarmService : Service() {
     }
 
     override fun onDestroy() {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
+        try {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+        } catch (e: Exception) {
+            Log.e("AlarmService", "Error releasing MediaPlayer", e)
+        }
         mediaPlayer = null
         stopForeground(true)
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun isValidUri(uri: Uri, context: Context): Boolean {
+        return try {
+            context.contentResolver.openInputStream(uri)?.close()
+            true
+        } catch (e: Exception) {
+            Log.e("AlarmService", "Invalid URI: $uri", e)
+            false
+        }
+    }
 }

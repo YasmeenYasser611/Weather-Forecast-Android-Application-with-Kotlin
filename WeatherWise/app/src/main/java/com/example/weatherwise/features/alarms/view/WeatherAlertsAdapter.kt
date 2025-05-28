@@ -26,8 +26,8 @@ class WeatherAlertsAdapter(
             binding.tvAlertTitle.text = alert.type
             binding.tvTimeRange.text = buildString {
                 append(SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(Date(alert.startTime)))
-                append(" - ")
-                append(SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(Date(alert.endTime)))
+//                append(" - ")
+//                append(SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(Date(alert.endTime)))
             }
 
             binding.ivActive.setImageResource(

@@ -8,7 +8,7 @@
     android:padding="16dp"
     android:layoutDirection="locale"
     android:textDirection="locale"
-    android:background="@drawable/dialog_background">
+    android:background="@drawable/dialog_bg">
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
@@ -33,7 +33,6 @@
             android:singleLine="true"/>
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Start Time -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_start_time"
         android:layout_width="match_parent"
@@ -58,32 +57,6 @@
             android:focusable="false"/>
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- End Time -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/til_end_time"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:hint="@string/end_time"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        app:boxStrokeColor="#4B0082"
-        app:hintTextColor="#4B0082"
-        app:boxBackgroundColor="#20FFFFFF"
-        app:startIconDrawable="@drawable/ic_time"
-        app:startIconTint="#4B0082">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_end_time"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:contentDescription="@string/end_time_description"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:inputType="none"
-            android:focusable="false"/>
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <!-- Notification Type Header -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -94,7 +67,6 @@
         android:layout_marginTop="24dp"
         android:layout_marginBottom="12dp"/>
 
-    <!-- Notification Type Selection -->
     <RadioGroup
         android:id="@+id/rg_notification_type"
         android:layout_width="match_parent"
@@ -144,7 +116,6 @@
             android:drawableStart="@drawable/ic_alarm_"/>
     </RadioGroup>
 
-    <!-- Custom Sound Option -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_custom_sound"
         android:layout_width="match_parent"
@@ -159,14 +130,5 @@
         app:startIconDrawable="@drawable/ic_music_note"
         app:startIconTint="#4B0082">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_custom_sound"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:contentDescription="@string/custom_sound_description"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:inputType="none"
-            android:focusable="false"/>
     </com.google.android.material.textfield.TextInputLayout>
 </LinearLayout>

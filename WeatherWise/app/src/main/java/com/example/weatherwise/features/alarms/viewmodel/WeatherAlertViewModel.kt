@@ -1,7 +1,5 @@
 package com.example.weatherwise.features.alarms.viewmodel
 
-
-
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -17,18 +15,15 @@ class WeatherAlertViewModel(private val repository: IWeatherRepository) : ViewMo
     val isLoading: LiveData<Boolean> = _isLoading
     private val _errorMessage = MutableLiveData<String?>()
     val errorMessage: LiveData<String?> = _errorMessage
-
-    // Add this new LiveData for alarm updates
     private val _alertsUpdated = MutableLiveData<Boolean>()
     val alertsUpdated: LiveData<Boolean> = _alertsUpdated
 
-
-    // Simplified to just trigger DB operations
     fun addAlert(alert: WeatherAlert) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
                 repository.saveAlert(alert)
+                _alertsUpdated.value = true
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to add alert: ${e.message}"
             } finally {
@@ -37,14 +32,28 @@ class WeatherAlertViewModel(private val repository: IWeatherRepository) : ViewMo
         }
     }
 
-
     fun deleteAlert(alertId: String) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
                 repository.deleteAlert(alertId)
+                _alertsUpdated.value = true
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to delete alert: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun updateAlert(alert: WeatherAlert) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                repository.updateAlert(alert)
+                _alertsUpdated.value = true
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to update alert: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
@@ -55,23 +64,7 @@ class WeatherAlertViewModel(private val repository: IWeatherRepository) : ViewMo
         _errorMessage.value = null
     }
 
-    fun updateAlert(alert: WeatherAlert) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                repository.updateAlert(alert)
-                // Notify any listeners that an alarm might need rescheduling
-                _alertsUpdated.value = true
-            } catch (e: Exception) {
-                _errorMessage.value = "Failed to update alert: ${e.message}"
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
     fun clearAlertsUpdated() {
         _alertsUpdated.value = false
     }
-
 }

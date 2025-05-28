@@ -11,28 +11,42 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layoutDirection="locale"
-        android:textDirection="locale"
-        android:gravity="center">
+        android:gravity="center"
+        android:paddingTop="24dp"
+        android:paddingBottom="16dp">
 
         <TextView
-            android:id="@+id/tvAlertTitle"
+            android:id="@+id/tv_alert_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@android:color/black"
-            android:textSize="18sp"
+            android:textColor="@android:color/white"
+            android:textSize="20sp"
             android:textStyle="bold"
-            android:padding="8dp"/>
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp"/>
 
         <Button
-            android:id="@+id/btnDismiss"
+            android:id="@+id/button_dismiss"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="@string/dismiss"
             android:contentDescription="@string/dismiss_description"
             android:textColor="@android:color/white"
+            android:backgroundTint="#4B0082"
             android:textAllCaps="false"
-            android:padding="8dp"/>
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp"
+            android:elevation="4dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Long-press to open app"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:alpha="0.8"
+            android:paddingBottom="8dp"/>
     </LinearLayout>
 </FrameLayout>
