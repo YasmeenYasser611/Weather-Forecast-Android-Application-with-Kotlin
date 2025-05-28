@@ -69,6 +69,9 @@
     <string name="select_sound_description">اختر صوتًا مخصصًا</string>
     <string name="custom_sound_input_description">الصوت المخصص المختار للتنبيه</string>
 
+    <string name="hourly">كل ساعة</string>
+    <string name="weekly">أسبوعي</string>
+
     <string name="city_name">عنوانك الطويل هنا</string>
     <string name="hourly_forecast">توقعات كل ساعة</string>
     <string name="weekly_forecast">توقعات 5 أيام</string>

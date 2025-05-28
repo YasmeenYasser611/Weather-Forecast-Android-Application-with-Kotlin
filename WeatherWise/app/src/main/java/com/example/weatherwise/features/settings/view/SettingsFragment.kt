@@ -89,6 +89,7 @@ class SettingsFragment : Fragment() {
                     PreferencesManager.LOCATION_MANUAL -> R.id.rb_manual
                     else -> R.id.rb_gps
                 }
+
             )
             binding.btnSelectLocation.visibility = if (method == PreferencesManager.LOCATION_MANUAL) View.VISIBLE else View.GONE
         }
@@ -173,21 +174,41 @@ class SettingsFragment : Fragment() {
                 viewModel.setNotificationsEnabled(isChecked, fromUser = true)
             }
         }
-        binding.btnSelectLocation.setOnClickListener {
-            viewModel.selectManualLocation()
-        }
         binding.btnSaveSettings.setOnClickListener {
             viewModel.saveSettings()
             val language = when (binding.rgLanguage.checkedRadioButtonId) {
                 R.id.rb_arabic -> "ar"
                 else -> "en"
             }
+
+            // Update locale immediately
             (requireActivity() as MainActivity).updateLocale(language)
+
+            // Update this fragment's UI
+            updateLanguage()
+
+            // Show toast in the new language
             val toastText = if (language == "ar") "تم حفظ الإعدادات" else "Settings saved"
             Toast.makeText(requireContext(), toastText, Toast.LENGTH_SHORT).show()
-            Handler(Looper.getMainLooper()).postDelayed({
-                findNavController().navigateUp()
-            }, 500)
+
+            // Navigate back (optional, remove if you want to stay in settings)
+            findNavController().navigateUp()
+        }
+        binding.rgLocationMethod.setOnCheckedChangeListener { _, checkedId ->
+            val locationMethod = when (checkedId) {
+                R.id.rb_manual -> PreferencesManager.LOCATION_MANUAL
+                R.id.rb_gps -> PreferencesManager.LOCATION_GPS
+                else -> PreferencesManager.LOCATION_GPS
+            }
+            viewModel.setLocationMethod(locationMethod)
+        }
+        binding.switchNotifications.setOnCheckedChangeListener { _, isChecked ->
+            if (binding.switchNotifications.isPressed) {
+                viewModel.setNotificationsEnabled(isChecked, fromUser = true)
+            }
+        }
+        binding.btnSelectLocation.setOnClickListener {
+            viewModel.selectManualLocation()
         }
     }
 

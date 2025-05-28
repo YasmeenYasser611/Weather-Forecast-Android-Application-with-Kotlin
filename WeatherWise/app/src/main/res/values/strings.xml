@@ -105,6 +105,9 @@
     <string name="delete">Delete</string>
     <string name="delete_description">Delete action</string>
 
+    <string name="hourly">Hourly</string>
+    <string name="weekly">Weekly</string>
+
     <string name="home">Home</string>
     <string name="map">Map</string>
     <string name="favorite_details">Favorite Details</string>
@@ -115,6 +118,7 @@
 
 
     <string name="remove_favorite_description">Remove favorite</string>
+
 
 
 </resources>

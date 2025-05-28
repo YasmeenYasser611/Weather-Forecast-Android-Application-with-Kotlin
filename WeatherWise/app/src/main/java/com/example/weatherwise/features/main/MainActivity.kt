@@ -1,6 +1,8 @@
 package com.example.weatherwise.features.main
 
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
@@ -96,44 +98,52 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp() || super.onSupportNavigateUp()
     }
 
-    private fun setAppLocale(languageCode: String) {
-        val locale = Locale(languageCode)
-        Locale.setDefault(locale)
-        val config = Configuration(resources.configuration)
-        config.setLocale(locale)
-        resources.updateConfiguration(config, resources.displayMetrics)
-    }
 
-    override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(newBase)
-    }
+
+
 
     fun updateLocale(languageCode: String) {
         if (preferencesManager.getLanguageCode() == languageCode) {
-            Log.d("Localization", "Language already set to $languageCode")
             return
         }
 
-        Log.d("Localization", "Updating locale to: $languageCode")
+        // Save the new language
         preferencesManager.setLanguage(languageCode)
-        setAppLocale(languageCode)
 
-        val layoutDirection = if (languageCode == "ar") {
+        // Update locale
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+
+        val resources = resources
+        val config = Configuration(resources.configuration)
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
+
+        // Update layout direction
+        window.decorView.layoutDirection = if (languageCode == "ar") {
             View.LAYOUT_DIRECTION_RTL
         } else {
             View.LAYOUT_DIRECTION_LTR
         }
-        window.decorView.layoutDirection = layoutDirection
 
+        // Update navigation drawer direction
         setupNavigationDrawer()
-        binding.navView.menu.clear()
-        binding.navView.inflateMenu(R.menu.nav_menu)
+
+        // Notify fragments to update their UI
         notifyFragmentsOfLanguageChange()
 
-        Handler(Looper.getMainLooper()).postDelayed({
-            Log.d("Localization", "Recreating activity")
-            recreate()
-        }, 300)
+        // Refresh activity UI (e.g., toolbar, navigation drawer menu)
+        refreshActivityUI()
+    }
+
+    private fun refreshActivityUI() {
+        // Update navigation drawer menu items
+        binding.navView.menu.clear()
+        binding.navView.inflateMenu(R.menu.nav_menu)
+
+        // Update any other activity-level UI elements (e.g., toolbar title)
+        // If you have a toolbar, update its title or other text
+        // Example: setSupportActionBar(binding.toolbar)
     }
 
     private fun notifyFragmentsOfLanguageChange() {
@@ -141,7 +151,58 @@ class MainActivity : AppCompatActivity() {
             when (fragment) {
                 is HomeFragment -> fragment.updateLanguage()
                 is SettingsFragment -> fragment.updateLanguage()
+                // Add other fragments if needed
             }
         }
     }
+
+    private fun setAppLocale(languageCode: String) {
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+
+        val resources = resources
+        val config = Configuration(resources.configuration)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            config.setLocale(locale)
+            createConfigurationContext(config)
+        } else {
+            config.locale = locale
+            resources.updateConfiguration(config, resources.displayMetrics)
+        }
+
+        // Update resources for the entire app
+        resources.updateConfiguration(config, resources.displayMetrics)
+    }
+
+    override fun applyOverrideConfiguration(overrideConfiguration: Configuration?) {
+        overrideConfiguration?.let {
+            val uiMode = it.uiMode
+            it.setTo(baseContext.resources.configuration)
+            it.uiMode = uiMode
+        }
+        super.applyOverrideConfiguration(overrideConfiguration)
+    }
+
+
+    override fun attachBaseContext(newBase: Context) {
+        val preferencesManager = PreferencesManager(newBase)
+        val languageCode = preferencesManager.getLanguageCode()
+        val locale = Locale(languageCode)
+        val newContext = ContextWrapper(newBase)
+
+        val resources = newBase.resources
+        val configuration = Configuration(resources.configuration)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            configuration.setLocale(locale)
+            newContext.createConfigurationContext(configuration)
+        } else {
+            configuration.locale = locale
+            resources.updateConfiguration(configuration, resources.displayMetrics)
+        }
+
+        super.attachBaseContext(newContext)
+    }
+
 }

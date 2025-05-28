@@ -3,6 +3,7 @@ package com.example.weatherwise.features.mainscreen.view
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.res.Configuration
 import android.net.ConnectivityManager
 import android.os.Bundle
@@ -161,19 +162,19 @@ class HomeFragment : Fragment() {
         }
 
     }
-    fun updateLanguage() {
+
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        val preferencesManager = PreferencesManager(context)
         val languageCode = preferencesManager.getLanguageCode()
         val locale = Locale(languageCode)
         Locale.setDefault(locale)
+
+        val resources = context.resources
         val config = Configuration(resources.configuration)
         config.setLocale(locale)
         resources.updateConfiguration(config, resources.displayMetrics)
-        binding.tvCityName.text = preferencesManager.getManualAddress()
-        viewModel.weatherData.value?.currentWeather?.let { current ->
-            binding.tvTemperature.text = "${current.main.temp.toInt()}°"
-            val description = current.weather.firstOrNull()?.description?.capitalizeFirst() ?: "N/A"
-            binding.tvWeatherDescription.text = "$description  H:${current.main.temp_max.toInt()}° L:${current.main.temp_min.toInt()}°"
-        }
     }
 
     private fun setupListeners() {
@@ -298,5 +299,44 @@ class HomeFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+    fun updateLanguage() {
+        val languageCode = preferencesManager.getLanguageCode()
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+
+        // Update configuration
+        val config = Configuration(resources.configuration)
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
+
+        // Update layout direction
+        binding.root.layoutDirection = if (languageCode == "ar") {
+            View.LAYOUT_DIRECTION_RTL
+        } else {
+            View.LAYOUT_DIRECTION_LTR
+        }
+
+        // Update static text views
+        binding.tabHourly.text = getString(R.string.hourly)
+        binding.tabWeekly.text = getString(R.string.weekly)
+
+        // Update weather data display
+        viewModel.weatherData.value?.let { weatherData ->
+            updateWeatherUI(weatherData)
+        }
+
+        // Notify adapters to refresh
+        hourlyAdapter.notifyDataSetChanged()
+        dailyAdapter.notifyDataSetChanged()
+
+        // Update city name if available
+        viewModel.locationData.value?.let {
+            binding.tvCityName.text = it.address
+        }
+
+        // Force UI refresh
+        binding.root.invalidate()
+        binding.root.requestLayout()
     }
 }

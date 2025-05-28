@@ -72,9 +72,14 @@ class PreferencesManager(context: Context) {
         return lang
     }
     fun setLanguage(languageCode: String) {
-        sharedPreferences.edit().putString(KEY_LANGUAGE, languageCode).apply()
+        sharedPreferences.edit {
+            putString(KEY_LANGUAGE, languageCode)
+            apply() // Use apply() for async saving
+        }
         Log.d("Localization", "Language saved: $languageCode")
     }
+
+
 
     fun getLanguageCode(): String {
         return sharedPreferences.getString(KEY_LANGUAGE, "en") ?: "en"
