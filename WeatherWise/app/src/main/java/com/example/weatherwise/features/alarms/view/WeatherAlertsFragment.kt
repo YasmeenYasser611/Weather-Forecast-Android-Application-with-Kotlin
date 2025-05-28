@@ -10,6 +10,7 @@ import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -19,6 +20,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -105,8 +108,11 @@ class WeatherAlertsFragment : Fragment() {
                 }
             },
             onDelete = { alert ->
-                cancelAlarm(alert.id)
-                showDeleteConfirmation(alert)
+                // Find the position of the alert in the current list
+                val position = adapter.currentList.indexOf(alert)
+                if (position != -1) {
+                    deleteAlertWithUndo(alert, position)
+                }
             }
         )
         binding.rvActiveAlerts.adapter = adapter
@@ -256,14 +262,10 @@ class WeatherAlertsFragment : Fragment() {
             showDateTimePicker { dateTime ->
                 calendar.timeInMillis = dateTime
                 dialogBinding.etStartTime.setText(
-                    SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
-                        .format(Date(dateTime))
+                    SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault()).format(Date(dateTime))
                 )
             }
         }
-
-        // Remove the custom sound visibility logic
-        // dialogBinding.rgNotificationType.setOnCheckedChangeListener is no longer needed
 
         addAlertDialog = AlertDialog.Builder(requireContext())
             .setTitle("Add Weather Alert")
@@ -308,26 +310,74 @@ class WeatherAlertsFragment : Fragment() {
             .show()
     }
 
-    private fun showDeleteConfirmation(alert: WeatherAlert) {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Delete Alert")
-            .setMessage("Are you sure you want to delete this alert?")
-            .setPositiveButton("Delete") { _, _ ->
-                viewModel.deleteAlert(alert.id)
+
+    // First, add this function to your WeatherAlertsFragment
+    @SuppressLint("RestrictedApi")
+    private fun showCustomAlertSnackbar(removedAlert: WeatherAlert, originalPosition: Int) {
+        // Inflate custom layout
+        val snackView = layoutInflater.inflate(R.layout.custom_snackbar, null)
+
+        // Create and configure Snackbar
+        val snackbar = Snackbar.make(binding.root, "", Snackbar.LENGTH_INDEFINITE).apply {
+            view.setBackgroundColor(Color.TRANSPARENT)
+            (view as? Snackbar.SnackbarLayout)?.apply {
+                removeAllViews()
+                addView(snackView, 0)
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        }
+
+        // Configure custom view
+        snackView.apply {
+            findViewById<TextView>(R.id.snackbar_text).text =
+                "Deleted ${removedAlert.type} alert"
+
+            findViewById<Button>(R.id.snackbar_undo).setOnClickListener {
+                // Undo action - reinsert item
+                val currentList = adapter.currentList.toMutableList()
+                currentList.add(originalPosition, removedAlert)
+                adapter.submitList(currentList)
+                viewModel.addAlert(removedAlert) // Restore in database
+                if (removedAlert.isActive) {
+                    scheduleAlarmIfNeeded(removedAlert)
+                }
+                snackbar.dismiss()
+            }
+
+            findViewById<Button>(R.id.snackbar_cancel).setOnClickListener {
+                // Confirm deletion - no need to do anything since we already deleted
+                snackbar.dismiss()
+            }
+        }
+
+        // Show snackbar with 10 second timeout as fallback
+        snackbar.show()
+        snackView.postDelayed({
+            if (snackbar.isShown) {
+                snackbar.dismiss()
+            }
+        }, 10000)
     }
+
+    // Then modify your deleteAlertWithUndo function to be simpler:
+    private fun deleteAlertWithUndo(alert: WeatherAlert, position: Int) {
+        // Cancel the alarm and delete from database
+        cancelAlarm(alert.id)
+        viewModel.deleteAlert(alert.id)
+
+        // Create a mutable copy of the current list and remove the item
+        val currentList = adapter.currentList.toMutableList()
+        currentList.removeAt(position)
+        adapter.submitList(currentList)
+
+        // Show custom Snackbar
+        showCustomAlertSnackbar(alert, position)
+    }
+
 
     override fun onDestroyView() {
         super.onDestroyView()
         addAlertDialog?.dismiss()
         _binding = null
-    }
-
-    companion object {
-        private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1001
-        fun newInstance() = WeatherAlertsFragment()
     }
 
     private fun saveAlert(dialogBinding: DialogAddAlertBinding) {
@@ -339,7 +389,6 @@ class WeatherAlertsFragment : Fragment() {
             R.id.rb_alarm_sound -> "ALARM"
             else -> "SILENT"
         }
-//        val customSoundUri = dialogBinding.etCustomSound.text?.toString()
 
         if (alertType.isBlank() || startTimeText.isBlank()) {
             Snackbar.make(binding.snackbarAnchor, "Please fill all fields", Snackbar.LENGTH_LONG).show()
@@ -355,12 +404,19 @@ class WeatherAlertsFragment : Fragment() {
                 return
             }
 
+            val soundUri = if (notificationType == "ALARM") {
+                "android.resource://${requireContext().packageName}/${R.raw.alarm}"
+            } else {
+                null
+            }
+
             val newAlert = WeatherAlert(
                 id = generateAlertId(alertType, startTime),
                 type = alertType,
                 startTime = startTime,
                 notificationType = notificationType,
-                isActive = true
+                isActive = true,
+                customSoundUri = soundUri
             )
 
             viewModel.addAlert(newAlert)
@@ -383,6 +439,7 @@ class WeatherAlertsFragment : Fragment() {
                 putExtra("alert_id", alert.id)
                 putExtra("alert_type", alert.type)
                 putExtra("notification_type", alert.notificationType)
+                putExtra("sound_uri", alert.customSoundUri)
             }
 
             Log.d("WeatherAlertsFragment", "Scheduling alert: ${alert.id}, type: ${alert.notificationType}, sound: ${alert.customSoundUri}")
@@ -435,5 +492,10 @@ class WeatherAlertsFragment : Fragment() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         alarmManager.cancel(pendingIntent)
+    }
+
+    companion object {
+        private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1001
+        fun newInstance() = WeatherAlertsFragment()
     }
 }

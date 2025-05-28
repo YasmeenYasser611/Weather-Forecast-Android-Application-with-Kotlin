@@ -119,6 +119,8 @@
 
     <string name="remove_favorite_description">Remove favorite</string>
 
+    <string name="alarm_instructions">Long-press notification to open app</string>
 
+    <string name="delete_alert">Delete alert</string>
 
 </resources>

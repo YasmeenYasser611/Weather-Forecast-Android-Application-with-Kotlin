@@ -1,7 +1,5 @@
 package com.example.weatherwise.features.alarms.view
 
-
-
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -26,8 +24,6 @@ class WeatherAlertsAdapter(
             binding.tvAlertTitle.text = alert.type
             binding.tvTimeRange.text = buildString {
                 append(SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(Date(alert.startTime)))
-//                append(" - ")
-//                append(SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(Date(alert.endTime)))
             }
 
             binding.ivActive.setImageResource(
@@ -39,7 +35,7 @@ class WeatherAlertsAdapter(
             binding.btnToggle.setOnClickListener { onToggle(alert) }
 
             // Set appropriate icon based on alert type
-            val iconRes = when(alert.type.lowercase(Locale.getDefault())) {
+            val iconRes = when (alert.type.lowercase(Locale.getDefault())) {
                 "rain" -> R.drawable.rain
                 "snow" -> R.drawable.nightrain
                 "storm" -> R.drawable.heavyrainandstorm
@@ -47,9 +43,9 @@ class WeatherAlertsAdapter(
             }
             binding.ivAlertType.setImageResource(iconRes)
 
-            binding.root.setOnLongClickListener {
+            // Handle delete button click
+            binding.btnDelete.setOnClickListener {
                 onDelete(alert)
-                true
             }
         }
     }

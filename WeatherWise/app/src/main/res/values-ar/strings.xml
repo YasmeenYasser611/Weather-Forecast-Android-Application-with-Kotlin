@@ -117,6 +117,8 @@
     <string name="weather_icon_description">أيقونة حالة الطقس</string>
     <string name="high_low_temperature_format">الأعلى: %1$d° الأدنى: %2$d°</string>
 
+    <string name="alarm_instructions"> </string>
     <string name="remove_favorite_description">إزالة المفضلة</string>
+    <string name="delete_alert"> إزالة الإشعار </string>
 
 </resources>
