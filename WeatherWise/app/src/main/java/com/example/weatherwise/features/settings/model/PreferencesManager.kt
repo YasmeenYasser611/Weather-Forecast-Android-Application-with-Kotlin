@@ -62,12 +62,22 @@ class PreferencesManager(context: Context) {
     }
 
     // Language
-    fun setLanguage(language: String) {
-        sharedPreferences.edit { putString(KEY_LANGUAGE, language) }
-    }
+
+    // In PreferencesManager
+
 
     fun getLanguage(): String {
-        return sharedPreferences.getString(KEY_LANGUAGE, LANGUAGE_ENGLISH) ?: LANGUAGE_ENGLISH
+        val lang = sharedPreferences.getString(KEY_LANGUAGE, LANGUAGE_ENGLISH) ?: LANGUAGE_ENGLISH
+        Log.d("Localization", "Language retrieved: $lang")
+        return lang
+    }
+    fun setLanguage(languageCode: String) {
+        sharedPreferences.edit().putString(KEY_LANGUAGE, languageCode).apply()
+        Log.d("Localization", "Language saved: $languageCode")
+    }
+
+    fun getLanguageCode(): String {
+        return sharedPreferences.getString(KEY_LANGUAGE, "en") ?: "en"
     }
 
     // Notifications
@@ -177,13 +187,7 @@ class PreferencesManager(context: Context) {
         }
     }
 
-    fun getLanguageCode(): String {
-        return when (getLanguage()) {
-            LANGUAGE_ENGLISH -> "en"
-            LANGUAGE_ARABIC -> "ar"
-            else -> "en"
-        }
-    }
+
     fun setNotificationsEnabled(enabled: Boolean) {
         sharedPreferences.edit { putBoolean(KEY_NOTIFICATIONS_ENABLED, enabled) }
     }

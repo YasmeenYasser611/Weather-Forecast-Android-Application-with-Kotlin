@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -12,7 +13,9 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:layoutDirection="locale"
+        android:textDirection="locale">
 
         <!-- Temperature (Left side) -->
         <TextView
@@ -54,7 +57,7 @@
             android:layout_height="60dp"
             android:layout_alignParentEnd="true"
             android:layout_alignTop="@id/tv_temperature"
-            android:contentDescription="Weather Icon"
+            android:contentDescription="@string/weather_icon_description"
             app:lottie_autoPlay="true"
             app:lottie_fileName="weather_animation.json"
             app:lottie_loop="true" />
@@ -79,7 +82,7 @@
             android:layout_below="@id/tv_weather_description"
             android:layout_marginTop="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Remove favorite"
+            android:contentDescription="@string/remove_favorite_description"
             android:src="@drawable/ic_delete"/>
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

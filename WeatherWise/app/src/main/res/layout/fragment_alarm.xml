@@ -3,12 +3,16 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/dialog_background"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:layoutDirection="locale"
+    android:textDirection="locale">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:layoutDirection="locale"
+        android:textDirection="locale"
         android:gravity="center">
 
         <TextView
@@ -25,7 +29,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Dismiss"
+            android:text="@string/dismiss"
+            android:contentDescription="@string/dismiss_description"
             android:textColor="@android:color/white"
             android:textAllCaps="false"
             android:padding="8dp"/>

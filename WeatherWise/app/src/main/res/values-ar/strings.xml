@@ -1,0 +1,119 @@
+<resources>
+    <string name="app_name">الطقس الحكيم</string>
+    <string name="hello_blank_fragment">مرحبًا، جزء فارغ</string>
+    <string name="settings">الإعدادات</string>
+    <string name="location_settings">إعدادات الموقع</string>
+    <string name="use_gps_location">استخدام موقع GPS</string>
+    <string name="select_location_manually">اختيار الموقع يدويًا</string>
+    <string name="select_on_map">اختيار على الخريطة</string>
+    <string name="units_settings">إعدادات الوحدات</string>
+    <string name="temperature_unit">وحدة درجة الحرارة</string>
+    <string name="celsius">سيلزيوس (°م)</string>
+    <string name="fahrenheit">فهرنهايت (°ف)</string>
+    <string name="kelvin">كلفن (ك)</string>
+    <string name="wind_speed_unit">وحدة سرعة الرياح</string>
+    <string name="meters_sec">متر/ثانية</string>
+    <string name="miles_hour">ميل/ساعة</string>
+    <string name="language_settings">اللغة</string>
+    <string name="english">الإنجليزية</string>
+    <string name="arabic">العربية</string>
+    <string name="save_settings">حفظ الإعدادات</string>
+    <string name="notifications_settings">الإشعارات</string>
+    <string name="enable_notifications">تفعيل الإشعارات</string>
+    <string name="favorites">المفضلة</string>
+    <string name="no_favorites">ليس لديك أي مواقع مفضلة بعد</string>
+    <string name="no_favorites_description">لا توجد مفضلة</string>
+    <string name="add_first_favorite">أضف موقعك المفضل الأول</string>
+    <string name="add_favorite_description">إضافة مفضلة</string>
+    <string name="remove_favorite">إزالة المفضلة</string>
+    <string name="weather_alerts">تنبيهات الطقس</string>
+    <string name="weather_alerts_description">قم بتعيين تنبيهات ليتم إعلامك بحالات الطقس المحددة في منطقتك.</string>
+    <string name="active_alerts">التنبيهات النشطة</string>
+    <string name="no_active_alerts">لا توجد تنبيهات طقس نشطة</string>
+    <string name="no_alerts_description">لا توجد تنبيهات</string>
+    <string name="add_first_alert">أضف تنبيهك الأول</string>
+    <string name="add_alert_description">إضافة تنبيه</string>
+    <string name="turn_off">إيقاف</string>
+    <string name="turn_on">تشغيل</string>
+    <string name="alert_type">نوع التنبيه</string>
+    <string name="start_time">وقت البدء</string>
+    <string name="end_time">وقت الانتهاء</string>
+    <string name="notification_type">نوع الإشعار</string>
+    <string name="silent_notification">إشعار صامت</string>
+    <string name="sound_notification">إشعار بصوت</string>
+    <string name="alarm_sound">صوت المنبه</string>
+    <string name="custom_sound">صوت مخصص</string>
+
+    <string-array name="alert_types">
+        <item>مطر</item>
+        <item>عاصفة</item>
+        <item>ثلج</item>
+        <item>حرارة شديدة</item>
+        <item>برد شديد</item>
+    </string-array>
+
+    <string name="notification_channel_name">إشعارات الطقس</string>
+    <string name="notification_channel_description">إشعارات لتحديثات الطقس</string>
+    <string name="add_weather_alert">إضافة تنبيه طقس</string>
+    <string name="add_weather_alert_description">حوار لإضافة تنبيه طقس جديد</string>
+    <string name="alert_type_icon_description">أيقونة اختيار نوع التنبيه</string>
+    <string name="alert_type_input_description">اختر نوع تنبيه الطقس</string>
+    <string name="start_time_icon_description">أيقونة اختيار وقت البدء</string>
+    <string name="start_time_input_description">اختر وقت البدء للتنبيه</string>
+    <string name="end_time_icon_description">أيقونة اختيار وقت الانتهاء</string>
+    <string name="end_time_input_description">اختر وقت الانتهاء للتنبيه</string>
+    <string name="notification_type_description">اختر نوع الإشعار</string>
+    <string name="silent_notification_description">خيار الإشعار الصامت</string>
+    <string name="sound_notification_description">خيار الإشعار بصوت</string>
+    <string name="alarm_sound_description">خيار صوت المنبه</string>
+    <string name="select_sound_description">اختر صوتًا مخصصًا</string>
+    <string name="custom_sound_input_description">الصوت المخصص المختار للتنبيه</string>
+
+    <string name="city_name">عنوانك الطويل هنا</string>
+    <string name="hourly_forecast">توقعات كل ساعة</string>
+    <string name="weekly_forecast">توقعات 5 أيام</string>
+    <string name="pressure">الضغط</string>
+    <string name="humidity">الرطوبة</string>
+    <string name="wind">الرياح</string>
+    <string name="cloud">الغيوم</string>
+    <string name="uv_index">مؤشر الأشعة فوق البنفسجية</string>
+    <string name="visibility">الرؤية</string>
+    <string name="background_description">الخلفية</string>
+    <string name="menu_description">القائمة</string>
+    <string name="weather_animation_description">رسوم الطقس المتحركة</string>
+    <string name="pressure_icon_description">أيقونة الضغط</string>
+    <string name="humidity_icon_description">أيقونة الرطوبة</string>
+    <string name="wind_icon_description">أيقونة الرياح</string>
+    <string name="cloud_icon_description">أيقونة الغيوم</string>
+    <string name="uv_icon_description">أيقونة الأشعة فوق البنفسجية</string>
+    <string name="visibility_icon_description">أيقونة الرؤية</string>
+    <string name="back_description">رجوع</string>
+    <string name="search_location">البحث عن موقع</string>
+    <string name="enter_location_to_search">أدخل موقعًا للبحث</string>
+    <string name="back">رجوع</string>
+    <string name="save_location">حفظ الموقع</string>
+    <string name="dismiss">رفض</string>
+    <string name="dismiss_description">رفض التنبيه</string>
+
+    <string name="alert_type_description">اختر نوع التنبيه</string>
+    <string name="start_time_description">اختر وقت البدء</string>
+    <string name="end_time_description">اختر وقت الانتهاء</string>
+    <string name="custom_sound_description">اختر صوتًا مخصصًا</string>
+
+    <string name="undo">تراجع</string>
+    <string name="undo_description">التراجع عن الإجراء</string>
+    <string name="delete">حذف</string>
+    <string name="delete_description">حذف الإجراء</string>
+
+    <string name="home">الرئيسية</string>
+    <string name="map">الخريطة</string>
+    <string name="favorite_details">تفاصيل المفضلة</string>
+    <string name="navigation_drawer_description">فتح قائمة التنقل</string>
+    <string name="alarms">التنبيهات</string>
+
+    <string name="weather_icon_description">أيقونة حالة الطقس</string>
+    <string name="high_low_temperature_format">الأعلى: %1$d° الأدنى: %2$d°</string>
+
+    <string name="remove_favorite_description">إزالة المفضلة</string>
+
+</resources>

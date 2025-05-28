@@ -1,6 +1,6 @@
 package com.example.weatherwise.features.alarms.view
 
-import WeatherService
+
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlarmManager
@@ -31,6 +31,7 @@ import com.example.weatherwise.data.local.LocalDatabase
 import com.example.weatherwise.data.model.entity.WeatherAlert
 import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
+import com.example.weatherwise.data.remote.WeatherService
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.DialogAddAlertBinding
 import com.example.weatherwise.databinding.FragmentAlarmsBinding

@@ -1,8 +1,9 @@
 package com.example.weatherwise.features.mainscreen.view
 
-import WeatherService
+
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import android.net.ConnectivityManager
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -25,6 +26,7 @@ import com.example.weatherwise.data.local.LocalDatabase
 import com.example.weatherwise.data.model.domain.WeatherData
 import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
+import com.example.weatherwise.data.remote.WeatherService
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentWeatherBinding
 import com.example.weatherwise.features.mainscreen.view.dailyforecast.DailyForecastAdapter
@@ -159,13 +161,29 @@ class HomeFragment : Fragment() {
         }
 
     }
+    fun updateLanguage() {
+        val languageCode = preferencesManager.getLanguageCode()
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+        val config = Configuration(resources.configuration)
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
+        binding.tvCityName.text = preferencesManager.getManualAddress()
+        viewModel.weatherData.value?.currentWeather?.let { current ->
+            binding.tvTemperature.text = "${current.main.temp.toInt()}°"
+            val description = current.weather.firstOrNull()?.description?.capitalizeFirst() ?: "N/A"
+            binding.tvWeatherDescription.text = "$description  H:${current.main.temp_max.toInt()}° L:${current.main.temp_min.toInt()}°"
+        }
+    }
 
     private fun setupListeners() {
         binding.tabHourly.setOnClickListener { switchToHourlyForecast() }
         binding.tabWeekly.setOnClickListener { switchToDailyForecast() }
         binding.swipeRefreshLayout.setOnRefreshListener { viewModel.refreshCurrentWeather() }
         binding.btnMenu.setOnClickListener {
-            (requireActivity() as MainActivity).drawerLayout.openDrawer(GravityCompat.START)
+            val isRtl = preferencesManager.getLanguage() == PreferencesManager.LANGUAGE_ARABIC
+            val drawerGravity = if (isRtl) GravityCompat.END else GravityCompat.START
+            (requireActivity() as MainActivity).drawerLayout.openDrawer(drawerGravity)
         }
     }
 
@@ -178,6 +196,7 @@ class HomeFragment : Fragment() {
             }
         }
     }
+
 
     private fun updateWeatherUI(weatherData: WeatherData) {
         weatherData.currentWeather?.let { current ->

@@ -7,6 +7,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
+    android:layoutDirection="locale"
+    android:textDirection="locale"
     tools:context=".features.main.MainActivity">
 
     <!-- Main content area where fragments will be loaded -->
@@ -23,8 +25,9 @@
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_gravity="start"
+        android:layout_gravity="start|end"
         android:fitsSystemWindows="true"
+        android:contentDescription="@string/navigation_drawer_description"
         app:headerLayout="@layout/nav_header"
         app:menu="@menu/nav_menu" />
 

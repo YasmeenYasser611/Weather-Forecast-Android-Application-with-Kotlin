@@ -1,166 +1,172 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
-xmlns:android="http://schemas.android.com/apk/res/android"
-xmlns:app="http://schemas.android.com/apk/res-auto"
-android:layout_width="match_parent"
-android:layout_height="wrap_content"
-android:orientation="vertical"
-android:padding="24dp"
-android:background="@drawable/dialog_background"
-android:elevation="8dp">
-
-
-<com.google.android.material.textfield.TextInputLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:hint="@string/alert_type"
-    app:boxStrokeColor="#4B0082"
-    app:hintTextColor="#4B0082"
-    app:boxBackgroundColor="#20FFFFFF"
-    app:endIconTint="#4B0082"
-    app:startIconDrawable="@drawable/ic_alert_type"
-    app:startIconTint="#4B0082"
-    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
-
-    <AutoCompleteTextView
-        android:id="@+id/actv_alert_type"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:inputType="none"
-        android:singleLine="true"/>
-</com.google.android.material.textfield.TextInputLayout>
-
-<!-- Start Time -->
-<com.google.android.material.textfield.TextInputLayout
-    android:id="@+id/til_start_time"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="20dp"
-    android:hint="@string/start_time"
-    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-    app:boxStrokeColor="#4B0082"
-    app:hintTextColor="#4B0082"
-    app:boxBackgroundColor="#20FFFFFF"
-    app:startIconDrawable="@drawable/ic_time"
-    app:startIconTint="#4B0082">
-
-    <com.google.android.material.textfield.TextInputEditText
-        android:id="@+id/et_start_time"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:inputType="none"
-        android:focusable="false"/>
-</com.google.android.material.textfield.TextInputLayout>
-
-<!-- End Time -->
-<com.google.android.material.textfield.TextInputLayout
-    android:id="@+id/til_end_time"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="20dp"
-    android:hint="@string/end_time"
-    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-    app:boxStrokeColor="#4B0082"
-    app:hintTextColor="#4B0082"
-    app:boxBackgroundColor="#20FFFFFF"
-    app:startIconDrawable="@drawable/ic_time"
-    app:startIconTint="#4B0082">
-
-    <com.google.android.material.textfield.TextInputEditText
-        android:id="@+id/et_end_time"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:inputType="none"
-        android:focusable="false"/>
-</com.google.android.material.textfield.TextInputLayout>
-
-<!-- Notification Type Header -->
-<TextView
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:text="@string/notification_type"
-    android:textColor="#4B0082"
-    android:textSize="18sp"
-    android:textStyle="bold"
-    android:layout_marginTop="24dp"
-    android:layout_marginBottom="12dp"/>
-
-<!-- Notification Type Selection -->
-<RadioGroup
-    android:id="@+id/rg_notification_type"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="8dp"
-    android:background="#20000000"
-    android:outlineProvider="background"
-    android:elevation="4dp"
-    android:clipToOutline="true">
+    android:padding="16dp"
+    android:layoutDirection="locale"
+    android:textDirection="locale"
+    android:background="@drawable/dialog_background">
 
-    <com.google.android.material.radiobutton.MaterialRadioButton
-        android:id="@+id/rb_silent_notification"
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/silent_notification"
-        android:textColor="@android:color/white"
-        android:buttonTint="#4B0082"
-        android:paddingVertical="12dp"
-        android:drawablePadding="16dp"
-        android:drawableStart="@drawable/ic_volume_off"/>
+        android:hint="@string/alert_type"
+        app:boxStrokeColor="#4B0082"
+        app:hintTextColor="#4B0082"
+        app:boxBackgroundColor="#20FFFFFF"
+        app:endIconTint="#4B0082"
+        app:startIconDrawable="@drawable/ic_alert_type"
+        app:startIconTint="#4B0082"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
-    <com.google.android.material.radiobutton.MaterialRadioButton
-        android:id="@+id/rb_sound_notification"
+        <AutoCompleteTextView
+            android:id="@+id/actv_alert_type"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/alert_type_description"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:inputType="none"
+            android:singleLine="true"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Start Time -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_start_time"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/sound_notification"
-        android:textColor="@android:color/white"
-        android:buttonTint="#4B0082"
-        android:layout_marginTop="8dp"
-        android:paddingVertical="12dp"
-        android:drawablePadding="16dp"
-        android:drawableStart="@drawable/ic_volume_on"/>
+        android:layout_marginTop="20dp"
+        android:hint="@string/start_time"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        app:boxStrokeColor="#4B0082"
+        app:hintTextColor="#4B0082"
+        app:boxBackgroundColor="#20FFFFFF"
+        app:startIconDrawable="@drawable/ic_time"
+        app:startIconTint="#4B0082">
 
-    <com.google.android.material.radiobutton.MaterialRadioButton
-        android:id="@+id/rb_alarm_sound"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_start_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/start_time_description"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:inputType="none"
+            android:focusable="false"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- End Time -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_end_time"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/alarm_sound"
-        android:textColor="@android:color/white"
-        android:buttonTint="#4B0082"
-        android:layout_marginTop="8dp"
-        android:paddingVertical="12dp"
-        android:drawablePadding="16dp"
-        android:drawableStart="@drawable/ic_alarm_"/>
-</RadioGroup>
+        android:layout_marginTop="20dp"
+        android:hint="@string/end_time"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        app:boxStrokeColor="#4B0082"
+        app:hintTextColor="#4B0082"
+        app:boxBackgroundColor="#20FFFFFF"
+        app:startIconDrawable="@drawable/ic_time"
+        app:startIconTint="#4B0082">
 
-<!-- Custom Sound Option -->
-<com.google.android.material.textfield.TextInputLayout
-    android:id="@+id/til_custom_sound"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="20dp"
-    android:hint="@string/custom_sound"
-    android:visibility="gone"
-    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-    app:boxStrokeColor="#4B0082"
-    app:hintTextColor="#4B0082"
-    app:boxBackgroundColor="#20FFFFFF"
-    app:startIconDrawable="@drawable/ic_music_note"
-    app:startIconTint="#4B0082">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_end_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/end_time_description"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:inputType="none"
+            android:focusable="false"/>
+    </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputEditText
-        android:id="@+id/et_custom_sound"
+    <!-- Notification Type Header -->
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:inputType="none"
-        android:focusable="false"/>
-</com.google.android.material.textfield.TextInputLayout>
+        android:text="@string/notification_type"
+        android:textColor="#4B0082"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- Notification Type Selection -->
+    <RadioGroup
+        android:id="@+id/rg_notification_type"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:background="#20000000"
+        android:outlineProvider="background"
+        android:clipToOutline="true">
+
+        <com.google.android.material.radiobutton.MaterialRadioButton
+            android:id="@+id/rb_silent_notification"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/silent_notification"
+            android:contentDescription="@string/silent_notification_description"
+            android:textColor="@android:color/white"
+            android:buttonTint="#4B0082"
+            android:paddingVertical="12dp"
+            android:drawablePadding="16dp"
+            android:drawableStart="@drawable/ic_volume_off"/>
+
+        <com.google.android.material.radiobutton.MaterialRadioButton
+            android:id="@+id/rb_sound_notification"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/sound_notification"
+            android:contentDescription="@string/sound_notification_description"
+            android:textColor="@android:color/white"
+            android:buttonTint="#4B0082"
+            android:layout_marginTop="8dp"
+            android:paddingVertical="12dp"
+            android:drawablePadding="16dp"
+            android:drawableStart="@drawable/ic_volume_on"/>
+
+        <com.google.android.material.radiobutton.MaterialRadioButton
+            android:id="@+id/rb_alarm_sound"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/alarm_sound"
+            android:contentDescription="@string/alarm_sound_description"
+            android:textColor="@android:color/white"
+            android:buttonTint="#4B0082"
+            android:layout_marginTop="8dp"
+            android:paddingVertical="12dp"
+            android:drawablePadding="16dp"
+            android:drawableStart="@drawable/ic_alarm_"/>
+    </RadioGroup>
+
+    <!-- Custom Sound Option -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_custom_sound"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:hint="@string/custom_sound"
+        android:visibility="gone"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        app:boxStrokeColor="#4B0082"
+        app:hintTextColor="#4B0082"
+        app:boxBackgroundColor="#20FFFFFF"
+        app:startIconDrawable="@drawable/ic_music_note"
+        app:startIconTint="#4B0082">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_custom_sound"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/custom_sound_description"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:inputType="none"
+            android:focusable="false"/>
+    </com.google.android.material.textfield.TextInputLayout>
 </LinearLayout>

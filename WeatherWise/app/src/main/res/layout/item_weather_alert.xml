@@ -8,6 +8,7 @@
     android:layout_marginStart="16dp"
     android:layout_marginEnd="16dp"
     android:layout_marginBottom="8dp"
+    android:layoutDirection="locale"
     app:cardBackgroundColor="#40000000"
     app:cardCornerRadius="8dp"
     app:cardElevation="2dp">
@@ -15,7 +16,9 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:layoutDirection="locale"
+        android:textDirection="locale">
 
         <!-- Alert title/type -->
         <TextView
@@ -25,6 +28,7 @@
             android:textColor="@android:color/white"
             android:textSize="16sp"
             android:textStyle="bold"
+            android:textDirection="locale"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintEnd_toStartOf="@id/iv_active"
@@ -47,6 +51,7 @@
             android:layout_height="wrap_content"
             android:textColor="#CCFFFFFF"
             android:textSize="14sp"
+            android:textDirection="locale"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tv_alert_title"
             app:layout_constraintEnd_toStartOf="@id/btn_toggle"
@@ -60,6 +65,7 @@
             android:text="@string/turn_off"
             style="@style/Widget.AppCompat.Button.Borderless"
             android:textColor="@android:color/white"
+            android:textDirection="locale"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/iv_active" />
 
@@ -80,6 +86,7 @@
             android:layout_marginStart="8dp"
             android:textColor="#CCFFFFFF"
             android:textSize="14sp"
+            android:textDirection="locale"
             app:layout_constraintStart_toEndOf="@id/iv_alert_type"
             app:layout_constraintTop_toTopOf="@id/iv_alert_type"
             app:layout_constraintEnd_toEndOf="parent"

@@ -4,14 +4,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:layoutDirection="locale"
+    android:textDirection="locale">
 
     <!-- Search Bar -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/search_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Search location"
+        android:hint="@string/search_location"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         app:endIconDrawable="@android:drawable/ic_delete"
         app:endIconMode="clear_text">
@@ -30,7 +32,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="8dp"
-        android:text="Enter a location to search"
+        android:text="@string/enter_location_to_search"
         android:textSize="14sp" />
 
     <!-- Results RecyclerView -->
@@ -72,13 +74,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
-            android:text="Back" />
+            android:text="@string/back" />
 
         <Button
             android:id="@+id/btn_save_location"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Save Location" />
+            android:text="@string/save_location" />
     </LinearLayout>
 
 </LinearLayout>

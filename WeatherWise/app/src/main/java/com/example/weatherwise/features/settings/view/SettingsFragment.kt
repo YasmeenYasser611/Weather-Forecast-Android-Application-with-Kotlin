@@ -1,17 +1,18 @@
 package com.example.weatherwise.features.settings.view
 
-import WeatherService
 import android.Manifest
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -23,52 +24,42 @@ import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentSettingsBinding
+import com.example.weatherwise.features.main.MainActivity
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModel
 import com.example.weatherwise.features.settings.viewmodel.SettingsViewModelFactory
 import com.example.weatherwise.utils.LocationHelper
 import com.google.android.material.snackbar.Snackbar
+import  com.example.weatherwise.data.remote.WeatherService
+import java.util.Locale
 
 class SettingsFragment : Fragment() {
 
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
     private lateinit var viewModel: SettingsViewModel
-    private lateinit var notificationPermissionLauncher: ActivityResultLauncher<String>
-
-    private lateinit var overlayPermissionLauncher: ActivityResultLauncher<Intent>
+    private lateinit var notificationPermissionLauncher: androidx.activity.result.ActivityResultLauncher<String>
+    private lateinit var overlayPermissionLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Initialize the permission launchers
-        notificationPermissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted ->
+        notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             viewModel.onNotificationPermissionResult(isGranted)
         }
-
-        overlayPermissionLauncher = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) { result ->
+        overlayPermissionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 viewModel.onOverlayPermissionResult(Settings.canDrawOverlays(requireContext()))
             }
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentSettingsBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // Initialize ViewModel with dependencies
         val factory = SettingsViewModelFactory(
             LocationHelper(requireContext()),
             WeatherRepositoryImpl.getInstance(
@@ -79,29 +70,18 @@ class SettingsFragment : Fragment() {
             PreferencesManager(requireContext()),
             requireContext()
         )
-
-        // Create ViewModel using the factory
-        // In both SettingsFragment and MapFragment, use:
         viewModel = ViewModelProvider(requireActivity(), factory)[SettingsViewModel::class.java]
-
         setupObservers()
         setupListeners()
     }
 
     private fun setupObservers() {
-
         viewModel.requestOverlayPermission.observe(viewLifecycleOwner) { shouldRequest ->
             if (shouldRequest && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:${requireContext().packageName}")
-                )
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${requireContext().packageName}"))
                 overlayPermissionLauncher.launch(intent)
             }
         }
-
-
-
         viewModel.locationMethod.observe(viewLifecycleOwner) { method ->
             binding.rgLocationMethod.check(
                 when (method) {
@@ -110,21 +90,8 @@ class SettingsFragment : Fragment() {
                     else -> R.id.rb_gps
                 }
             )
-            binding.btnSelectLocation.visibility =
-                if (method == PreferencesManager.LOCATION_MANUAL) View.VISIBLE else View.GONE
-
-//            if (method == PreferencesManager.LOCATION_MANUAL) {
-//                // Show the saved address
-//                val address = preferencesManager.getManualAddress()
-//                if (address.isNotEmpty()) {
-//                    binding.tvManualLocation.text = address
-//                    binding.tvManualLocation.visibility = View.VISIBLE
-//                }
-//            } else {
-//                binding.tvManualLocation.visibility = View.GONE
-//            }
+            binding.btnSelectLocation.visibility = if (method == PreferencesManager.LOCATION_MANUAL) View.VISIBLE else View.GONE
         }
-
         viewModel.temperatureUnit.observe(viewLifecycleOwner) { unit ->
             binding.rgTempUnit.check(
                 when (unit) {
@@ -135,7 +102,6 @@ class SettingsFragment : Fragment() {
                 }
             )
         }
-
         viewModel.windSpeedUnit.observe(viewLifecycleOwner) { unit ->
             binding.rgWindUnit.check(
                 when (unit) {
@@ -145,27 +111,20 @@ class SettingsFragment : Fragment() {
                 }
             )
         }
-
         viewModel.language.observe(viewLifecycleOwner) { language ->
             binding.rgLanguage.check(
                 when (language) {
-                    PreferencesManager.LANGUAGE_ENGLISH -> R.id.rb_english
-                    PreferencesManager.LANGUAGE_ARABIC -> R.id.rb_arabic
+                    "ar" -> R.id.rb_arabic
                     else -> R.id.rb_english
                 }
             )
         }
-
         viewModel.notificationsEnabled.observe(viewLifecycleOwner) { enabled ->
             binding.switchNotifications.isChecked = enabled
         }
-
         viewModel.error.observe(viewLifecycleOwner) { error ->
-            error?.let {
-                Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
-            }
+            error?.let { Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show() }
         }
-
         viewModel.navigateToMap.observe(viewLifecycleOwner) { navigate ->
             if (navigate == true) {
                 findNavController().navigate(R.id.action_settings_to_map)
@@ -177,33 +136,19 @@ class SettingsFragment : Fragment() {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-
-        viewModel.notificationsEnabled.observe(viewLifecycleOwner) { enabled ->
-            binding.switchNotifications.isChecked = enabled
-        }
-
-        viewModel.error.observe(viewLifecycleOwner) { error ->
-            error?.let {
-                Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
-            }
-        }
     }
 
     private fun setupListeners() {
         binding.btnBack.setOnClickListener {
             findNavController().navigateUp()
         }
-
-        binding.rgLocationMethod.setOnCheckedChangeListener { _, checkedId ->
-            viewModel.setLocationMethod(
-                when (checkedId) {
-                    R.id.rb_gps -> PreferencesManager.LOCATION_GPS
-                    R.id.rb_manual -> PreferencesManager.LOCATION_MANUAL
-                    else -> PreferencesManager.LOCATION_GPS
-                }
-            )
+        binding.rgLanguage.setOnCheckedChangeListener { _, checkedId ->
+            val language = when (checkedId) {
+                R.id.rb_arabic -> "ar"
+                else -> "en"
+            }
+            viewModel.setLanguage(language)
         }
-
         binding.rgTempUnit.setOnCheckedChangeListener { _, checkedId ->
             viewModel.setTemperatureUnit(
                 when (checkedId) {
@@ -214,7 +159,6 @@ class SettingsFragment : Fragment() {
                 }
             )
         }
-
         binding.rgWindUnit.setOnCheckedChangeListener { _, checkedId ->
             viewModel.setWindSpeedUnit(
                 when (checkedId) {
@@ -224,36 +168,42 @@ class SettingsFragment : Fragment() {
                 }
             )
         }
-
-        binding.rgLanguage.setOnCheckedChangeListener { _, checkedId ->
-            viewModel.setLanguage(
-                when (checkedId) {
-                    R.id.rb_english -> PreferencesManager.LANGUAGE_ENGLISH
-                    R.id.rb_arabic -> PreferencesManager.LANGUAGE_ARABIC
-                    else -> PreferencesManager.LANGUAGE_ENGLISH
-                }
-            )
-        }
-
         binding.switchNotifications.setOnCheckedChangeListener { _, isChecked ->
-            viewModel.setNotificationsEnabled(isChecked)
-        }
-
-        binding.btnSelectLocation.setOnClickListener {
-            viewModel.selectManualLocation()
-        }
-
-        binding.btnSaveSettings.setOnClickListener {
-            viewModel.saveSettings()
-            Toast.makeText(requireContext(), "Settings saved", Toast.LENGTH_SHORT).show()
-            findNavController().navigateUp()
-        }
-        binding.switchNotifications.setOnCheckedChangeListener { _, isChecked ->
-            // Only proceed if this change came from user interaction
             if (binding.switchNotifications.isPressed) {
                 viewModel.setNotificationsEnabled(isChecked, fromUser = true)
             }
         }
+        binding.btnSelectLocation.setOnClickListener {
+            viewModel.selectManualLocation()
+        }
+        binding.btnSaveSettings.setOnClickListener {
+            viewModel.saveSettings()
+            val language = when (binding.rgLanguage.checkedRadioButtonId) {
+                R.id.rb_arabic -> "ar"
+                else -> "en"
+            }
+            (requireActivity() as MainActivity).updateLocale(language)
+            val toastText = if (language == "ar") "تم حفظ الإعدادات" else "Settings saved"
+            Toast.makeText(requireContext(), toastText, Toast.LENGTH_SHORT).show()
+            Handler(Looper.getMainLooper()).postDelayed({
+                findNavController().navigateUp()
+            }, 500)
+        }
+    }
+
+    fun updateLanguage() {
+        val languageCode = PreferencesManager(requireContext()).getLanguageCode()
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+        val config = Configuration(resources.configuration)
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
+        binding.rgLanguage.check(
+            when (languageCode) {
+                "ar" -> R.id.rb_arabic
+                else -> R.id.rb_english
+            }
+        )
     }
 
     override fun onDestroyView() {

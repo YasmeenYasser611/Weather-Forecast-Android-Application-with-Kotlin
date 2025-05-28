@@ -1,3 +1,4 @@
+package com.example.weatherwise.data.remote
 import com.example.weatherwise.data.model.response.CurrentWeatherResponse
 import com.example.weatherwise.data.model.response.GeocodingResponse
 import com.example.weatherwise.data.model.response.WeatherResponse

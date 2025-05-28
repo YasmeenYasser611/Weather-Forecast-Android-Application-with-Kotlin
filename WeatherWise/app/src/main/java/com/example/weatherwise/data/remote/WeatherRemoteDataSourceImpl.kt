@@ -1,6 +1,6 @@
 package com.example.weatherwise.data.remote
 
-import WeatherService
+
 import android.util.Log
 import com.example.weatherwise.data.model.response.CurrentWeatherResponse
 import com.example.weatherwise.data.model.response.GeocodingResponse

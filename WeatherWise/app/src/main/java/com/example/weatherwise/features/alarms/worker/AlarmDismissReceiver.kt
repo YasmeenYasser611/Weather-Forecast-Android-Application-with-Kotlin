@@ -1,7 +1,7 @@
 package com.example.weatherwise.features.alarms.worker
 
 
-import WeatherService
+
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -10,6 +10,7 @@ import com.example.weatherwise.data.local.LocalDataSourceImpl
 import com.example.weatherwise.data.local.LocalDatabase
 import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
+import com.example.weatherwise.data.remote.WeatherService
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import kotlinx.coroutines.CoroutineScope

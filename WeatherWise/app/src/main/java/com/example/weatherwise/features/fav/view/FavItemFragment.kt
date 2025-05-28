@@ -1,6 +1,6 @@
 package com.example.weatherwise.features.fav.view
 
-import WeatherService
+
 import android.net.ConnectivityManager
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -18,6 +18,7 @@ import com.example.weatherwise.data.local.LocalDatabase
 import com.example.weatherwise.data.model.domain.WeatherData
 import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
+import com.example.weatherwise.data.remote.WeatherService
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentFavItemBinding
 import com.example.weatherwise.features.mainscreen.view.dailyforecast.DailyForecastAdapter

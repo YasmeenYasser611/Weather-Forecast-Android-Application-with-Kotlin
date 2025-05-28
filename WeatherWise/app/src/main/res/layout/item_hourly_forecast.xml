@@ -6,7 +6,9 @@
     android:layout_height="wrap_content"
     android:background="@drawable/rounded_background"
     android:padding="8dp"
-    android:layout_marginEnd="8dp">
+    android:layout_marginEnd="8dp"
+    android:layoutDirection="locale"
+    android:textDirection="locale">
 
     <!-- Time -->
     <TextView

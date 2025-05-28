@@ -1,6 +1,6 @@
 package com.example.weatherwise.features.fav.view
 
-import WeatherService
+
 import android.annotation.SuppressLint
 import android.graphics.Color
 import com.example.weatherwise.databinding.FragmentFavBinding
@@ -25,6 +25,7 @@ import com.example.weatherwise.data.local.LocalDatabase
 import com.example.weatherwise.data.model.domain.LocationWithWeather
 import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
+import com.example.weatherwise.data.remote.WeatherService
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.features.fav.viewmodel.FavoritesViewModel
 import com.example.weatherwise.features.fav.viewmodel.FavoritesViewModelFactory

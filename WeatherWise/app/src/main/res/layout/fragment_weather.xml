@@ -4,442 +4,442 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:layoutDirection="locale"
+    android:textDirection="locale">
 
-        <!-- Fixed Background -->
-        <ImageView
+    <!-- Fixed Background -->
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/starry_background"
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/background_description" />
+
+    <!-- Scrollable Content with SwipeRefreshLayout -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:src="@drawable/starry_background"
-            android:scaleType="centerCrop"
-            android:contentDescription="Background" />
+            android:fillViewport="true">
 
-        <!-- Scrollable Content with SwipeRefreshLayout -->
-        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-            android:id="@+id/swipe_refresh_layout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <androidx.core.widget.NestedScrollView
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:fillViewport="true">
+                android:layout_height="wrap_content"
+                android:paddingBottom="16dp">
 
+                <!-- Navigation Icon -->
+                <ImageButton
+                    android:id="@+id/btn_menu"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_menu"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/menu_description"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="32dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"/>
+
+                <!-- City Name -->
+                <TextView
+                    android:id="@+id/tv_city_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="12dp"
+                    android:singleLine="false"
+                    android:text="@string/city_name"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/btn_menu"
+                    app:layout_constraintTop_toTopOf="@id/btn_menu" />
+
+                <TextView
+                    android:id="@+id/tv_date_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="May 18, 2025  06:16 PM"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="normal"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_city_name" />
+
+                <com.airbnb.lottie.LottieAnimationView
+                    android:id="@+id/weatherAnimation"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:layout_marginTop="12dp"
+                    android:contentDescription="@string/weather_animation_description"
+                    app:lottie_fileName="weather_unknown.json"
+                    app:lottie_autoPlay="true"
+                    app:lottie_loop="true"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_date_time" />
+
+                <!-- Current Temperature -->
+                <TextView
+                    android:id="@+id/tv_temperature"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="17°"
+                android:textColor="@android:color/white"
+                android:textSize="64sp"
+                android:textStyle="bold"
+                app:layout_constraintTop_toBottomOf="@id/weatherAnimation"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="8dp" />
+
+                <!-- Weather Description and High/Low -->
+                <TextView
+                    android:id="@+id/tv_weather_description"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cloudy  H:24° L:18°"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                app:layout_constraintTop_toBottomOf="@id/tv_temperature"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="8dp" />
+
+                <!-- Lottie Animation -->
+                <com.airbnb.lottie.LottieAnimationView
+                    android:id="@+id/iv_weather_background"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:layout_marginTop="12dp"
+                    android:contentDescription="@string/weather_animation_description"
+                    app:lottie_fileName="weather_animation.json"
+                    app:lottie_autoPlay="true"
+                    app:lottie_loop="true"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_weather_description" />
+
+                <!-- Forecast Section -->
                 <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/forecast_container"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingBottom="16dp">
+                    android:background="@drawable/rounded_background"
+                    android:padding="16dp"
+                    app:layout_constraintTop_toBottomOf="@id/iv_weather_background"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent">
 
-                    <!-- Navigation Icon -->
-                    <ImageButton
-                        android:id="@+id/btn_menu"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:src="@drawable/ic_menu"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Menu"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginTop="32dp"
+                    <!-- Forecast Tabs -->
+                    <LinearLayout
+                        android:id="@+id/forecast_tabs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="parent">
+
+                        <TextView
+                            android:id="@+id/tab_hourly"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/hourly_forecast"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:padding="8dp"
+                            android:background="@drawable/tab_selected_background" />
+
+                        <TextView
+                            android:id="@+id/tab_weekly"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/weekly_forecast"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:padding="8dp"
+                            android:layout_marginStart="16dp" />
+                    </LinearLayout>
+
+                    <!-- Hourly Forecast RecyclerView -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_hourly_forecast"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        app:layout_constraintTop_toBottomOf="@id/forecast_tabs"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"/>
+                        android:layout_marginTop="16dp" />
 
-                    <!-- City Name -->
-                    <TextView
-                        android:id="@+id/tv_city_name"
+                    <!-- 5-Day Forecast RecyclerView (Hidden by Default) -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_weekly_forecast"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        app:layout_constraintTop_toBottomOf="@id/forecast_tabs"
+                        app:layout_constraintStart_toStartOf="parent"
+                        android:layout_marginTop="16dp"
+                        android:visibility="gone" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <!-- Weather Details (Pressure, Humidity, Wind, Cloud, UV, Visibility) -->
+                <androidx.gridlayout.widget.GridLayout
+                    android:id="@+id/weather_details"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/rounded_background"
+                    android:padding="16dp"
+                    app:columnCount="3"
+                    app:rowCount="2"
+                    app:layout_constraintTop_toBottomOf="@id/forecast_container"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent">
+
+                    <!-- Pressure -->
+                    <LinearLayout
+                        app:layout_column="0"
+                        app:layout_row="0"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:layout_marginEnd="12dp"
-                        android:singleLine="false"
-                        android:text="address"
-                        android:textColor="@android:color/white"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toEndOf="@id/btn_menu"
-                        app:layout_constraintTop_toTopOf="@id/btn_menu" />
+                        android:layout_gravity="center"
+                        android:orientation="vertical"
+                        app:layout_columnWeight="1"
+                        tools:ignore="GridLayout">
 
-
-                    <TextView
-                        android:id="@+id/tv_date_time"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="May 18, 2025  06:16 PM"
-                        android:textColor="@android:color/white"
-                        android:textSize="16sp"
-                        android:textStyle="normal"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/tv_city_name" />
-
-                    <com.airbnb.lottie.LottieAnimationView
-                        android:id="@+id/weatherAnimation"
-                        android:layout_width="match_parent"
-                        android:layout_height="150dp"
-                        android:layout_marginTop="12dp"
-                        android:contentDescription="Weather Animation"
-                        app:lottie_fileName="weather_unknown.json"
-                        app:lottie_autoPlay="true"
-                        app:lottie_loop="true"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/tv_date_time" />
-
-                    <!-- Current Temperature -->
-                    <TextView
-                        android:id="@+id/tv_temperature"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="17°"
-                        android:textColor="@android:color/white"
-                        android:textSize="64sp"
-                        android:textStyle="bold"
-                        app:layout_constraintTop_toBottomOf="@id/weatherAnimation"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        android:layout_marginTop="8dp" />
-
-                    <!-- Weather Description and High/Low -->
-                    <TextView
-                        android:id="@+id/tv_weather_description"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Cloudy  H:24° L:18°"
-                        android:textColor="@android:color/white"
-                        android:textSize="18sp"
-                        app:layout_constraintTop_toBottomOf="@id/tv_temperature"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        android:layout_marginTop="8dp" />
-
-                    <!-- Lottie Animation -->
-                    <com.airbnb.lottie.LottieAnimationView
-                        android:id="@+id/iv_weather_background"
-                        android:layout_width="match_parent"
-                        android:layout_height="150dp"
-                        android:layout_marginTop="12dp"
-                        android:contentDescription="Weather Animation"
-                        app:lottie_fileName="weather_animation.json"
-                        app:lottie_autoPlay="true"
-                        app:lottie_loop="true"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/tv_weather_description" />
-
-                    <!-- Forecast Section -->
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:id="@+id/forecast_container"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/rounded_background"
-                        android:padding="16dp"
-                        app:layout_constraintTop_toBottomOf="@id/iv_weather_background"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent">
-
-                        <!-- Forecast Tabs -->
-                        <LinearLayout
-                            android:id="@+id/forecast_tabs"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center"
-                            app:layout_constraintTop_toTopOf="parent"
-                            app:layout_constraintStart_toStartOf="parent">
-
-                            <TextView
-                                android:id="@+id/tab_hourly"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Hourly Forecast"
-                                android:textColor="@android:color/white"
-                                android:textSize="16sp"
-                                android:padding="8dp"
-                                android:background="@drawable/tab_selected_background" />
-
-                            <TextView
-                                android:id="@+id/tab_weekly"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="5-Day Forecast"
-                                android:textColor="@android:color/white"
-                                android:textSize="16sp"
-                                android:padding="8dp"
-                                android:layout_marginStart="16dp" />
-                        </LinearLayout>
-
-                        <!-- Hourly Forecast RecyclerView -->
-                        <androidx.recyclerview.widget.RecyclerView
-                            android:id="@+id/rv_hourly_forecast"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                            app:layout_constraintTop_toBottomOf="@id/forecast_tabs"
-                            app:layout_constraintStart_toStartOf="parent"
-                            android:layout_marginTop="16dp" />
-
-                        <!-- 5-Day Forecast RecyclerView (Hidden by Default) -->
-                        <androidx.recyclerview.widget.RecyclerView
-                            android:id="@+id/rv_weekly_forecast"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                            app:layout_constraintTop_toBottomOf="@id/forecast_tabs"
-                            app:layout_constraintStart_toStartOf="parent"
-                            android:layout_marginTop="16dp"
-                            android:visibility="gone" />
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-
-                    <!-- Weather Details (Pressure, Humidity, Wind, Cloud, UV, Visibility) -->
-                    <androidx.gridlayout.widget.GridLayout
-                        android:id="@+id/weather_details"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginHorizontal="16dp"
-                        android:layout_marginTop="16dp"
-                        android:background="@drawable/rounded_background"
-                        android:padding="16dp"
-                        app:columnCount="3"
-                        app:rowCount="2"
-                        app:layout_constraintTop_toBottomOf="@id/forecast_container"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent">
-
-                        <!-- Pressure -->
-                        <LinearLayout
-                            app:layout_column="0"
-                            app:layout_row="0"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                        <ImageView
+                            android:id="@+id/iv_pressure_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
                             android:layout_gravity="center"
-                            android:orientation="vertical"
-                            app:layout_columnWeight="1"
-                            tools:ignore="GridLayout">
+                            android:src="@drawable/ic_pressure"
+                            android:contentDescription="@string/pressure_icon_description" />
 
-                            <ImageView
-                                android:id="@+id/iv_pressure_icon"
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_pressure"
-                                android:contentDescription="Pressure Icon" />
-
-                            <TextView
-                                android:id="@+id/tv_pressure"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="1021 hPa"
-                                android:textColor="@android:color/white"
-                                android:textSize="14sp"
-                                android:layout_marginTop="4dp"
-                                android:gravity="center" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Pressure"
-                                android:textColor="@android:color/white"
-                                android:textSize="12sp"
-                                android:gravity="center" />
-                        </LinearLayout>
-
-                        <!-- Humidity -->
-                        <LinearLayout
-                            app:layout_column="1"
-                            app:layout_row="0"
-                            android:layout_width="0dp"
+                        <TextView
+                            android:id="@+id/tv_pressure"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            app:layout_columnWeight="1">
+                            android:text="1021 hPa"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center" />
 
-                            <ImageView
-                                android:id="@+id/iv_humidity_icon"
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_humidity"
-                                android:contentDescription="Humidity Icon" />
-
-                            <TextView
-                                android:id="@+id/tv_humidity"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="77%"
-                                android:textColor="@android:color/white"
-                                android:textSize="14sp"
-                                android:layout_marginTop="4dp"
-                                android:gravity="center" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Humidity"
-                                android:textColor="@android:color/white"
-                                android:textSize="12sp"
-                                android:gravity="center" />
-                        </LinearLayout>
-
-                        <!-- Wind Speed -->
-                        <LinearLayout
-                            app:layout_column="2"
-                            app:layout_row="0"
-                            android:layout_width="0dp"
+                        <TextView
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            app:layout_columnWeight="1">
+                            android:text="@string/pressure"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:gravity="center" />
+                    </LinearLayout>
 
-                            <ImageView
-                                android:id="@+id/iv_wind_icon"
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_wind"
-                                android:contentDescription="Wind Icon" />
-
-                            <TextView
-                                android:id="@+id/tv_wind_speed"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="2.06 m/s"
-                                android:textColor="@android:color/white"
-                                android:textSize="14sp"
-                                android:layout_marginTop="4dp"
-                                android:gravity="center" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Wind"
-                                android:textColor="@android:color/white"
-                                android:textSize="12sp"
-                                android:gravity="center" />
-                        </LinearLayout>
-
-                        <!-- Cloud Cover -->
-                        <LinearLayout
-                            app:layout_column="0"
-                            app:layout_row="1"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            app:layout_columnWeight="1">
-
-                            <ImageView
-                                android:id="@+id/iv_cloud_icon"
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_cloudy"
-                                android:contentDescription="Cloud Icon" />
-
-                            <TextView
-                                android:id="@+id/tv_cloud_cover"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0%"
-                                android:textColor="@android:color/white"
-                                android:textSize="14sp"
-                                android:layout_marginTop="4dp"
-                                android:gravity="center" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Cloud"
-                                android:textColor="@android:color/white"
-                                android:textSize="12sp"
-                                android:gravity="center" />
-                        </LinearLayout>
-
-                        <!-- UV Index -->
-                        <LinearLayout
-                            app:layout_column="1"
-                            app:layout_row="1"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            app:layout_columnWeight="1">
-
-                            <ImageView
-                                android:id="@+id/iv_uv_icon"
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_uv"
-                                android:contentDescription="UV Icon" />
-
-                            <TextView
-                                android:id="@+id/tv_uv_index"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0.0"
-                                android:textColor="@android:color/white"
-                                android:textSize="14sp"
-                                android:layout_marginTop="4dp"
-                                android:gravity="center" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="UV Index"
-                                android:textColor="@android:color/white"
-                                android:textSize="12sp"
-                                android:gravity="center" />
-                        </LinearLayout>
-
-                        <!-- Visibility -->
-                        <LinearLayout
-                            app:layout_column="2"
-                            app:layout_row="1"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            app:layout_columnWeight="1">
-
-                            <ImageView
-                                android:id="@+id/iv_visibility_icon"
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_visibility"
-                                android:contentDescription="Visibility Icon" />
-
-                            <TextView
-                                android:id="@+id/tv_visibility"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="6000 m"
-                                android:textColor="@android:color/white"
-                                android:textSize="14sp"
-                                android:layout_marginTop="4dp"
-                                android:gravity="center" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Visibility"
-                                android:textColor="@android:color/white"
-                                android:textSize="12sp"
-                                android:gravity="center" />
-                        </LinearLayout>
-                    </androidx.gridlayout.widget.GridLayout>
-
-                    <!-- ProgressBar -->
-                    <ProgressBar
-                        android:id="@+id/progressBar"
-                        android:layout_width="wrap_content"
+                    <!-- Humidity -->
+                    <LinearLayout
+                        app:layout_column="1"
+                        app:layout_row="0"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        android:visibility="gone" />
+                        android:orientation="vertical"
+                        app:layout_columnWeight="1">
 
-                </androidx.constraintlayout.widget.ConstraintLayout>
-            </androidx.core.widget.NestedScrollView>
-        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+                        <ImageView
+                            android:id="@+id/iv_humidity_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_humidity"
+                            android:contentDescription="@string/humidity_icon_description" />
 
-    </FrameLayout>
+                        <TextView
+                            android:id="@+id/tv_humidity"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="77%"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/humidity"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:gravity="center" />
+                    </LinearLayout>
+
+                    <!-- Wind Speed -->
+                    <LinearLayout
+                        app:layout_column="2"
+                        app:layout_row="0"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        app:layout_columnWeight="1">
+
+                        <ImageView
+                            android:id="@+id/iv_wind_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_wind"
+                            android:contentDescription="@string/wind_icon_description" />
+
+                        <TextView
+                            android:id="@+id/tv_wind_speed"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="2.06 m/s"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/wind"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:gravity="center" />
+                    </LinearLayout>
+
+                    <!-- Cloud Cover -->
+                    <LinearLayout
+                        app:layout_column="0"
+                        app:layout_row="1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        app:layout_columnWeight="1">
+
+                        <ImageView
+                            android:id="@+id/iv_cloud_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_cloudy"
+                            android:contentDescription="@string/cloud_icon_description" />
+
+                        <TextView
+                            android:id="@+id/tv_cloud_cover"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0%"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/cloud"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:gravity="center" />
+                    </LinearLayout>
+
+                    <!-- UV Index -->
+                    <LinearLayout
+                        app:layout_column="1"
+                        app:layout_row="1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        app:layout_columnWeight="1">
+
+                        <ImageView
+                            android:id="@+id/iv_uv_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_uv"
+                            android:contentDescription="@string/uv_icon_description" />
+
+                        <TextView
+                            android:id="@+id/tv_uv_index"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0.0"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/uv_index"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:gravity="center" />
+                    </LinearLayout>
+
+                    <!-- Visibility -->
+                    <LinearLayout
+                        app:layout_column="2"
+                        app:layout_row="1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        app:layout_columnWeight="1">
+
+                        <ImageView
+                            android:id="@+id/iv_visibility_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_visibility"
+                            android:contentDescription="@string/visibility_icon_description" />
+
+                        <TextView
+                            android:id="@+id/tv_visibility"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="6000 m"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/visibility"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:gravity="center" />
+                    </LinearLayout>
+                </androidx.gridlayout.widget.GridLayout>
+
+                <!-- ProgressBar -->
+                <ProgressBar
+                    android:id="@+id/progressBar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    android:visibility="gone" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.core.widget.NestedScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+</FrameLayout>

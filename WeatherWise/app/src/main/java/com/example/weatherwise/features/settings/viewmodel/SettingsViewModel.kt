@@ -1,10 +1,12 @@
 package com.example.weatherwise.features.settings.viewmodel
 
 import android.Manifest
+import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
@@ -18,12 +20,14 @@ import com.example.weatherwise.data.repository.IWeatherRepository
 import com.example.weatherwise.features.settings.model.PreferencesManager
 import com.example.weatherwise.utils.LocationHelper
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 class SettingsViewModel(
     private val locationHelper: LocationHelper,
@@ -234,9 +238,13 @@ class SettingsViewModel(
         _windSpeedUnit.value = unit
     }
 
-    fun setLanguage(language: String) {
-        _language.value = language
+    // In SettingsViewModel.kt
+    fun setLanguage(languageCode: String) {
+        if (_language.value == languageCode) return
+        _language.value = languageCode
+        preferencesManager.setLanguage(languageCode)
     }
+
 
     fun saveSettings() {
         viewModelScope.launch {

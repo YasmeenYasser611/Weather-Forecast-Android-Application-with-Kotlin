@@ -3,6 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layoutDirection="locale"
+    android:textDirection="locale"
     android:background="@drawable/snackbar_background_dark"
     android:padding="16dp">
 
@@ -21,7 +23,8 @@
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
-            android:text="UNDO"
+            android:text="@string/undo"
+            android:contentDescription="@string/undo_description"
             android:textAllCaps="false"
             android:textColor="@android:color/white"
             app:cornerRadius="18dp"
@@ -37,7 +40,8 @@
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
-            android:text="DELETE"
+            android:text="@string/delete"
+            android:contentDescription="@string/delete_description"
             android:textAllCaps="false"
             android:textColor="#FF5252"
             app:cornerRadius="18dp"

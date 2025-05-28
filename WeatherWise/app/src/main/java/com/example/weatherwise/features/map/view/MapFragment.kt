@@ -1,6 +1,6 @@
 package com.example.weatherwise.features.map
 
-import WeatherService
+
 import android.content.Context
 import android.os.Bundle
 import android.text.Editable
@@ -19,6 +19,7 @@ import com.example.weatherwise.data.local.LocalDataSourceImpl
 import com.example.weatherwise.data.local.LocalDatabase
 import com.example.weatherwise.data.remote.RetrofitHelper
 import com.example.weatherwise.data.remote.WeatherRemoteDataSourceImpl
+import com.example.weatherwise.data.remote.WeatherService
 import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentMapBinding
 import com.example.weatherwise.features.fav.viewmodel.FavoritesViewModel
