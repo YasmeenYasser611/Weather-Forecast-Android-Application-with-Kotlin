@@ -262,17 +262,8 @@ class WeatherAlertsFragment : Fragment() {
             }
         }
 
-        dialogBinding.rgNotificationType.setOnCheckedChangeListener { _, checkedId ->
-            dialogBinding.tilCustomSound.visibility = when (checkedId) {
-                R.id.rb_alarm_sound -> View.VISIBLE
-                else -> View.GONE
-            }
-        }
-
-        // Placeholder for custom sound picker
-//        dialogBinding.etCustomSound.setOnClickListener {
-//            // Implement sound picker intent here, e.g., using ActivityResultContracts
-//        }
+        // Remove the custom sound visibility logic
+        // dialogBinding.rgNotificationType.setOnCheckedChangeListener is no longer needed
 
         addAlertDialog = AlertDialog.Builder(requireContext())
             .setTitle("Add Weather Alert")

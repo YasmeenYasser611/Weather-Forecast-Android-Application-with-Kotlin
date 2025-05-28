@@ -116,19 +116,4 @@
             android:drawableStart="@drawable/ic_alarm_"/>
     </RadioGroup>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/til_custom_sound"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:hint="@string/custom_sound"
-        android:visibility="gone"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        app:boxStrokeColor="#4B0082"
-        app:hintTextColor="#4B0082"
-        app:boxBackgroundColor="#20FFFFFF"
-        app:startIconDrawable="@drawable/ic_music_note"
-        app:startIconTint="#4B0082">
-
-    </com.google.android.material.textfield.TextInputLayout>
 </LinearLayout>
