@@ -1,6 +1,5 @@
 package com.example.weatherwise.features.fav.view
 
-
 import android.net.ConnectivityManager
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -23,7 +22,6 @@ import com.example.weatherwise.data.repository.WeatherRepositoryImpl
 import com.example.weatherwise.databinding.FragmentFavItemBinding
 import com.example.weatherwise.features.mainscreen.view.dailyforecast.DailyForecastAdapter
 import com.example.weatherwise.features.mainscreen.view.hourlyforecast.HourlyForecastAdapter
-
 import com.example.weatherwise.features.mainscreen.viewmodel.HomeViewModel
 import com.example.weatherwise.features.mainscreen.viewmodel.HomeViewModelFactory
 import com.example.weatherwise.utils.WeatherIconMapper
@@ -33,55 +31,55 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+class FavItemFragment : Fragment() {
 
-class FavItemFragment : Fragment()
-{
-
-        private var _binding: FragmentFavItemBinding? = null
-        private val binding get() = _binding!!
-        private lateinit var viewModel: HomeViewModel
-        private lateinit var hourlyAdapter: HourlyForecastAdapter
-        private lateinit var dailyAdapter: DailyForecastAdapter
+    private var _binding: FragmentFavItemBinding? = null
+    private val binding get() = _binding!!
+    private lateinit var viewModel: HomeViewModel
+    private lateinit var hourlyAdapter: HourlyForecastAdapter
+    private lateinit var dailyAdapter: DailyForecastAdapter
     private lateinit var preferencesManager: PreferencesManager
+    private lateinit var locationId: String
 
-        override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
-        ): View {
-            _binding = FragmentFavItemBinding.inflate(inflater, container, false)
-            return binding.root
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentFavItemBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        locationId = arguments?.getString("location_id") ?: run {
+            findNavController().navigateUp()
+            return
         }
 
-        override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-            super.onViewCreated(view, savedInstanceState)
+        preferencesManager = PreferencesManager(requireContext())
+        setupViewModel()
+        setupAdapters()
+        setupObservers()
+        setupListeners()
 
-            val locationId = arguments?.getString("location_id") ?: run {
-                findNavController().navigateUp()
-                return
-            }
+        viewModel.loadFavoriteDetails(locationId)
+    }
 
-            preferencesManager = PreferencesManager(requireContext())
-            setupViewModel()
-            setupAdapters()
-            setupObservers()
-            setupListeners()
-
-            viewModel.loadFavoriteDetails(locationId)
-        }
-
-        private fun setupViewModel() {
-            val factory = HomeViewModelFactory(
-                repository = WeatherRepositoryImpl.getInstance(
-                    WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
-                    LocalDataSourceImpl(LocalDatabase.getInstance(requireContext()).weatherDao()),
-                    preferencesManager
-                ),
-                locationHelper = LocationHelper(requireContext()),
-                connectivityManager = requireContext().getSystemService(ConnectivityManager::class.java), PreferencesManager(requireContext())
-            )
-            viewModel = ViewModelProvider(this, factory).get(HomeViewModel::class.java)
-        }
+    private fun setupViewModel() {
+        val factory = HomeViewModelFactory(
+            repository = WeatherRepositoryImpl.getInstance(
+                WeatherRemoteDataSourceImpl(RetrofitHelper.retrofit.create(WeatherService::class.java)),
+                LocalDataSourceImpl(LocalDatabase.getInstance(requireContext()).weatherDao()),
+                preferencesManager
+            ),
+            locationHelper = LocationHelper(requireContext()),
+            connectivityManager = requireContext().getSystemService(ConnectivityManager::class.java),
+            PreferencesManager(requireContext())
+        )
+        viewModel = ViewModelProvider(this, factory).get(HomeViewModel::class.java)
+    }
 
     private fun setupAdapters() {
         hourlyAdapter = HourlyForecastAdapter()
@@ -106,6 +104,7 @@ class FavItemFragment : Fragment()
                 updateWeatherUI(it)
                 hourlyAdapter.submitList(it.hourlyForecast ?: emptyList())
                 dailyAdapter.submitList(it.dailyForecast ?: emptyList())
+                binding.swipeRefreshLayout.isRefreshing = false
             }
         }
 
@@ -114,28 +113,40 @@ class FavItemFragment : Fragment()
         }
 
         viewModel.loading.observe(viewLifecycleOwner) {
-            binding.swipeRefreshLayout.isRefreshing = it
+            if (!binding.swipeRefreshLayout.isRefreshing) {
+                binding.swipeRefreshLayout.isRefreshing = it
+            }
         }
 
         viewModel.error.observe(viewLifecycleOwner) { error ->
-            error?.let { Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show() }
+            error?.let {
+                Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
+                binding.swipeRefreshLayout.isRefreshing = false
+            }
         }
-
     }
 
-        private fun setupListeners() {
-            binding.btnBack.setOnClickListener {
-                findNavController().navigateUp()
-            }
-
-            binding.tabHourly.setOnClickListener {
-                switchToHourlyForecast()
-            }
-
-            binding.tabWeekly.setOnClickListener {
-                switchToDailyForecast()
-            }
+    private fun setupListeners() {
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
         }
+
+        binding.tabHourly.setOnClickListener {
+            switchToHourlyForecast()
+        }
+
+        binding.tabWeekly.setOnClickListener {
+            switchToDailyForecast()
+        }
+
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            refreshData()
+        }
+    }
+
+    private fun refreshData() {
+        viewModel.loadFavoriteDetails(locationId)
+    }
 
     private fun updateWeatherUI(weatherData: WeatherData) {
         weatherData.currentWeather?.let { current ->
@@ -177,22 +188,23 @@ class FavItemFragment : Fragment()
         }
         return "%.1f %s".format(convertedSpeed, preferencesManager.getWindSpeedUnitSymbol())
     }
-        private fun switchToHourlyForecast() {
-            binding.rvHourlyForecast.visibility = View.VISIBLE
-            binding.rvWeeklyForecast.visibility = View.GONE
-            binding.tabHourly.background = ContextCompat.getDrawable(requireContext(), R.drawable.tab_selected_background)
-            binding.tabWeekly.background = null
-        }
 
-        private fun switchToDailyForecast() {
-            binding.rvHourlyForecast.visibility = View.GONE
-            binding.rvWeeklyForecast.visibility = View.VISIBLE
-            binding.tabWeekly.background = ContextCompat.getDrawable(requireContext(), R.drawable.tab_selected_background)
-            binding.tabHourly.background = null
-        }
-
-        override fun onDestroyView() {
-            super.onDestroyView()
-            _binding = null
-        }
+    private fun switchToHourlyForecast() {
+        binding.rvHourlyForecast.visibility = View.VISIBLE
+        binding.rvWeeklyForecast.visibility = View.GONE
+        binding.tabHourly.background = ContextCompat.getDrawable(requireContext(), R.drawable.tab_selected_background)
+        binding.tabWeekly.background = null
     }
+
+    private fun switchToDailyForecast() {
+        binding.rvHourlyForecast.visibility = View.GONE
+        binding.rvWeeklyForecast.visibility = View.VISIBLE
+        binding.tabWeekly.background = ContextCompat.getDrawable(requireContext(), R.drawable.tab_selected_background)
+        binding.tabHourly.background = null
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+}
